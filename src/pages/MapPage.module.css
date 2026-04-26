@@ -1,0 +1,357 @@
+/* MapPage.module.css — v6.1 */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px 12px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0 0 3px;
+}
+
+.sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.headerControls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* ── Tabs ── */
+.tabRow {
+  display: flex;
+  gap: 4px;
+}
+
+.tabBtn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+
+.tabBtn:hover { color: var(--text); background: var(--bg-hover); }
+.tabBtnActive {
+  background: var(--surface2);
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Filters ── */
+.filters {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.filterSelect {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 12px;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+.filterSelect:focus { outline: none; border-color: var(--accent); }
+
+/* ── Map container ── */
+.mapContainer {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0a0e14;
+  cursor: grab;
+  user-select: none;
+}
+
+.mapContainer:active { cursor: grabbing; }
+
+.mapInner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.mapImage {
+  display: block;
+  pointer-events: none;
+  image-rendering: auto;
+}
+
+/* ── Dragon pins ── */
+.pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  transition: transform 0.1s;
+  z-index: 2;
+}
+
+.pin:hover {
+  transform: translate(-50%, -50%) scale(1.3);
+  z-index: 10;
+}
+
+.pinDragging {
+  transform: translate(-50%, -50%) scale(1.4);
+  z-index: 20;
+  cursor: grabbing;
+}
+
+.pinDead { opacity: 0.55; filter: grayscale(0.7); }
+
+.pinIcon {
+  font-size: 18px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));
+}
+
+.pinGrowth {
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(0,0,0,0.7);
+  color: currentColor;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.3;
+  letter-spacing: 0.03em;
+}
+
+/* ── Zoom controls ── */
+.zoomControls {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 20;
+}
+
+.zoomBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+
+.zoomBtn:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+
+.zoomLevel {
+  font-size: 10px;
+  color: var(--muted);
+  min-width: 30px;
+  text-align: center;
+}
+
+/* ── Legend ── */
+.legend {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legendHint {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--hint);
+}
+
+/* ── Loading ── */
+.loadingState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Location picker modal ── */
+.pickerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8,10,15,0.80);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(4px);
+}
+
+.pickerModal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 380px;
+  max-width: 95vw;
+  overflow: hidden;
+  animation: fadeIn 0.18s ease both;
+}
+
+@keyframes fadeIn { from { opacity:0; transform:scale(0.95) translateY(6px); } to { opacity:1; transform:none; } }
+
+.pickerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pickerTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pickerBody {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pickerSelect {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--font-body);
+}
+
+.pickerCoords {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pickerFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* ── Drag hint label on active pin ── */
+.pinDragHint {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Empty state overlay on map ── */
+.mapEmpty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(13, 15, 20, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+.mapEmpty span {
+  display: block;
+  font-size: 11px;
+  color: var(--hint);
+  margin-top: 6px;
+}

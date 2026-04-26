@@ -1,0 +1,352 @@
+.page {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-base);
+  padding: 20px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.sub { font-size: 12px; color: var(--text-muted); }
+
+.headerStats {
+  display: flex;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.hStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.hStatNum {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hStatLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Filters ── */
+.filterRow {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.filterBtn {
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-border);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.13s;
+}
+
+.filterBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.filterActive {
+  background: var(--bg-raised);
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* ── Reference grid ── */
+.refGrid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.refCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--r-lg);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.refSpecies {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+.refStats {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.refStat {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.refStat b { color: var(--text-secondary); font-weight: 500; }
+
+/* ── Empty ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 24px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.emptyIcon { font-size: 40px; color: var(--bg-border); }
+.emptySub { font-size: 11px; opacity: 0.7; }
+
+/* ── Dragon cards ── */
+.dragonList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 180px 1fr 160px;
+  gap: 16px;
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--r-xl);
+  padding: 14px 18px;
+  transition: border-color 0.15s;
+}
+
+.card:hover { border-color: var(--bg-hover); }
+
+.cardElder {
+  border-color: var(--elder-dim);
+  background: linear-gradient(135deg, rgba(126,207,207,0.04) 0%, var(--bg-surface) 100%);
+  animation: elderGlow 2.5s ease-in-out infinite;
+}
+
+/* ── Card Left ── */
+.cardLeft { display: flex; flex-direction: column; gap: 4px; }
+
+.cardSpecies {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cardSpeciesCode {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+.cardMass {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.cardName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.unnamed { color: var(--text-muted); font-style: italic; font-weight: 400; }
+
+.cardMeta {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Card Center ── */
+.cardCenter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.elderBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.elderIcon {
+  font-size: 20px;
+  color: var(--elder);
+  animation: elderGlow 2.5s ease-in-out infinite;
+}
+
+.elderText {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--elder);
+  letter-spacing: 0.12em;
+}
+
+.ticksRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ticksVal {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.ticksOf {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ticksPct {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+/* ── Progress bar ── */
+.progressBar {
+  height: 8px;
+  background: var(--bg-hover);
+  border-radius: 4px;
+  overflow: visible;
+  position: relative;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent-bright));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* Mutation point markers */
+.mutMarker {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 14px;
+  background: var(--text-muted);
+  border-radius: 1px;
+  transform: translateX(-50%);
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.mutMarkerPassed {
+  background: var(--accent);
+  opacity: 1;
+}
+
+/* Mutation points row */
+.mutRow {
+  display: flex;
+  gap: 12px;
+}
+
+.mutPt {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.mutPtPassed {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* ── Card Right ── */
+.cardRight {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.timeBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.timeVal {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.timeLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.allMutPassed {
+  font-size: 11px;
+  color: var(--green);
+  font-weight: 500;
+}
+
+.tickRateBlock {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+  border-radius: 99px;
+}
+
+.tickRate {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.tickRateLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+}

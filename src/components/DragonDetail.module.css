@@ -1,0 +1,378 @@
+.panel {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.isElder {
+  background: linear-gradient(180deg, rgba(126,207,207,0.04) 0%, var(--surface) 200px);
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.emptyIcon { font-size: 48px; color: var(--border); }
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 32px 32px 24px;
+  border-bottom: 1px solid var(--border);
+  gap: 20px;
+}
+
+.headerLeft { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+
+.speciesBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid;
+  align-self: flex-start;
+}
+
+.name {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.unnamed { font-style: italic; color: var(--hint); }
+
+.badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.elderBadge {
+  background: rgba(126,207,207,0.12);
+  border-color: rgba(126,207,207,0.3);
+  color: var(--elder, #7ecfcf);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Body ── */
+.body {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ── Section ── */
+.section { display: flex; flex-direction: column; gap: 16px; }
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Skins ── */
+.skinRow {
+  display: flex;
+  gap: 12px;
+}
+
+.skinCard {
+  flex: 1;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skinLabel {
+  font-size: 10px;
+  color: var(--hint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.skinValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── Stats ── */
+.statGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.statCell {
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.statValue {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.statBarWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statBarBg {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.statBarFill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+/* ── Progression ── */
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface2);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.tickBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tickValue {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.tickLabel {
+  font-size: 10px;
+  color: var(--hint);
+  text-transform: uppercase;
+}
+
+.tickBarWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tickBar {
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tickFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.tickPct {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.elderStatus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.elderText {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hint);
+}
+
+.elderActive {
+  color: var(--elder, #7ecfcf);
+}
+
+/* ── Lineage ── */
+.lineageRow {
+  display: flex;
+  gap: 12px;
+}
+
+.lineageCard {
+  flex: 1;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lineageLabel {
+  font-size: 10px;
+  color: var(--hint);
+  text-transform: uppercase;
+}
+
+.lineageName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lineageSpecies {
+  font-size: 11px;
+  color: var(--accent-dim);
+}
+
+/* ── Notes ── */
+.notes {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  padding: 16px;
+  background: var(--surface2);
+  border-radius: 12px;
+  white-space: pre-wrap;
+}
+
+/* ── Meta ── */
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--hint);
+}
+
+.captureBadge {
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+/* ── v4 additions ── */
+.bqBadge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
+.nameGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+}
+
+.nameRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nameRowLabel {
+  font-size: 10px;
+  color: var(--text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.nameRowValue {
+  font-size: 13px;
+  color: var(--text, #eee);
+  font-weight: 500;
+}
+
+.playerBadge {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  margin-left: 8px;
+}
+
+/* ── Traits ── */
+.traitRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+.traitRow:last-child { border-bottom: none; }
+.traitLabel { font-size: 13px; color: var(--text-secondary); }
+.traitPts { font-size: 13px; font-weight: 600; }

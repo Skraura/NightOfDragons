@@ -1,0 +1,339 @@
+.page { flex: 1; overflow-y: auto; background: var(--bg-base); }
+
+.inner {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.heading {
+  font-size: 18px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-primary);
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--r-xl);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: opacity 0.2s;
+}
+
+.cardDimmed { opacity: 0.6; }
+.cardNote   { border-style: dashed; }
+
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.settingInfo {
+  flex: 1;
+}
+
+.settingLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.settingDesc {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Switch ── */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--hint);
+  transition: .2s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+  background-color: var(--accent);
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cardTitle {
+  font-size: 13px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-primary); margin-bottom: 4px;
+}
+
+.optionalTag {
+  margin-left: 8px;
+  font-size: 9px;
+  font-family: var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 1px 5px;
+  border: 1px solid var(--bg-border);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.cardDesc {
+  font-size: 12px; color: var(--text-muted); line-height: 1.6; max-width: 520px;
+}
+
+.statusBadge {
+  font-size: 11px; color: var(--green); padding: 3px 8px;
+  border-radius: 99px; background: rgba(74,158,106,0.12);
+  border: 1px solid rgba(74,158,106,0.3); white-space: nowrap; flex-shrink: 0;
+}
+
+/* ── OCR Engine ── */
+.engineGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.engineCard {
+  border: 1px solid var(--bg-border);
+  border-radius: var(--r-xl);
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  transition: border-color 0.15s, background 0.15s;
+  background: var(--bg-raised);
+}
+
+.engineCard:hover:not(.engineDisabled) {
+  border-color: var(--accent-dim);
+  background: var(--bg-hover);
+}
+
+.engineSelected {
+  border-color: var(--accent) !important;
+  background: var(--accent-glow) !important;
+}
+
+.engineDisabled { opacity: 0.5; cursor: not-allowed; }
+
+.engineRadio {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--bg-border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+  transition: border-color 0.15s;
+}
+
+.engineSelected .engineRadio { border-color: var(--accent); }
+
+.engineRadioDot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: transparent;
+  transition: background 0.15s;
+}
+.engineSelected .engineRadioDot { background: var(--accent); }
+
+.engineInfo { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+
+.engineName {
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
+}
+
+.engineBadgeFree {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 2px 6px; border-radius: 3px;
+  background: rgba(74,158,106,0.2); color: var(--green);
+  border: 1px solid rgba(74,158,106,0.4);
+}
+
+.engineBadgePaid {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 2px 6px; border-radius: 3px;
+  background: rgba(201,147,42,0.15); color: var(--accent);
+  border: 1px solid rgba(201,147,42,0.3);
+}
+
+.engineDesc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+.engineTags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.tagGood, .tagBad, .tagNeutral {
+  font-size: 10px; padding: 2px 7px; border-radius: 99px;
+}
+.tagGood    { color: var(--green);  background: rgba(74,158,106,0.1);  }
+.tagBad     { color: var(--red);    background: rgba(196,74,74,0.1);   }
+.tagNeutral { color: var(--accent); background: rgba(201,147,42,0.1);  }
+
+.engineWarn {
+  font-size: 11px; color: var(--accent-dim);
+  margin-top: 4px;
+}
+
+/* ── API Key ── */
+.keyRow { display: flex; gap: 10px; }
+.keyInput { flex: 1; }
+.keyHint { font-size: 11px; color: var(--text-muted); }
+.keyHint a { color: var(--accent); text-decoration: none; }
+.keyHint a:hover { text-decoration: underline; }
+
+/* ── Calibration ── */
+.progressBadge {
+  display: flex; align-items: baseline; gap: 2px; flex-shrink: 0;
+}
+.progressNum { font-size: 28px; font-weight: 700; color: var(--accent); line-height: 1; }
+.progressDen { font-size: 14px; color: var(--text-muted); }
+
+.fieldGrid { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.fieldChip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 99px;
+  background: var(--bg-raised); border: 1px solid var(--bg-border);
+  font-size: 11px; color: var(--text-muted);
+}
+.configured {
+  background: rgba(74,158,106,0.1);
+  border-color: rgba(74,158,106,0.3); color: var(--green);
+}
+.chipIcon { font-size: 10px; }
+
+.calibrateRow { display: flex; align-items: center; gap: 12px; }
+
+.steps {
+  background: var(--bg-raised); border: 1px solid var(--bg-border);
+  border-radius: var(--r-lg); padding: 14px 16px;
+}
+.stepsTitle { font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; }
+.stepList { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.stepList li { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+.stepList strong { color: var(--text-secondary); font-weight: 500; }
+
+/* ── F8 status ── */
+.kbd {
+  font-family: var(--font-body); font-size: 12px; font-weight: 700;
+  padding: 2px 6px; background: var(--bg-raised);
+  border: 1px solid var(--bg-border); border-bottom-width: 2px;
+  border-radius: 3px; color: var(--accent);
+}
+.requireList { display: flex; flex-direction: column; gap: 6px; }
+.req {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; padding: 6px 10px; border-radius: var(--r-md);
+}
+.reqOk { color: var(--green); background: rgba(74,158,106,0.1); }
+.reqNo  { color: var(--red);   background: rgba(196,74,74,0.08); }
+
+/* ── Platform notes ── */
+.platformGrid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.platformCol {
+  background: var(--bg-raised); border: 1px solid var(--bg-border);
+  border-radius: var(--r-lg); padding: 12px 14px;
+}
+.platformOs { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 6px; }
+.platformNote { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+.platformNote code {
+  font-family: var(--font-mono, monospace); font-size: 10px;
+  background: var(--bg-hover); padding: 1px 4px; border-radius: 3px;
+  color: var(--accent);
+}
+
+/* ── Lineage prefs ── */
+.lineagePrefsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lineagePrefRow {
+  padding: 10px 12px;
+  border-radius: var(--r-lg);
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+}
+
+.switchLocked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.switchLocked input { cursor: not-allowed; }
+
+/* ── Cloud settings ── */
+.statusOn {
+  background: rgba(74,158,106,0.15) !important;
+  color: #4a9e6a !important;
+  border-color: rgba(74,158,106,0.35) !important;
+}
+
+.cloudUrlRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.adminNote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--accent);
+  background: rgba(92,114,245,0.08);
+  border: 1px solid rgba(92,114,245,0.2);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+}
+.adminNoteIcon {
+  font-size: 12px;
+  flex-shrink: 0;
+}

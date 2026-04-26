@@ -1,0 +1,258 @@
+/* ── Page shell ── */
+.page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Header ── */
+.header {
+  padding: 20px 24px 14px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0 0 3px;
+}
+.sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.subPageHint {
+  color: var(--accent, #7c5cbf);
+  font-weight: 500;
+}
+
+/* ── Species tabs ── */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.tab:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.tabActive { font-weight: 600; }
+.tabIcon  { font-size: 13px; line-height: 1; }
+.tabName  { white-space: nowrap; }
+.tabBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.07);
+  color: var(--hint);
+  transition: background 0.15s, color 0.15s;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ── Lineage page tabs (multi-group) ── */
+.lineageTabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  overflow-x: auto;
+}
+.lineageTab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: var(--font-body);
+}
+.lineageTab:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.lineageTabActive {
+  font-weight: 600;
+  background: rgba(255,255,255,0.05);
+}
+.lineageTabCount {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  color: var(--hint);
+}
+
+/* ── Chart area ── */
+.chartWrapper {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Canvas page wrapper — fills the chartWrapper */
+.canvasPage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Label shown when multiple lineages exist */
+.canvasLabel {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border);
+}
+.canvasLabelIcon { font-size: 12px; }
+.canvasDragonCount { color: var(--hint); }
+
+/* family-chart container
+   CRITICAL FIX: position absolute + inset:0 so the SVG fills the real
+   measured container instead of being cropped to the top-left corner.
+   The lines were only visible in the top-left because f3 calculated
+   positions relative to getBoundingClientRect() but the wrapper had
+   no explicit height — making the SVG viewport 0×0.                  */
+.f3Wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+
+  /* FIX: female color changed to light-red, distinct from Crimson skin */
+  --female-color: #e05a5a;   /* was #c48a92 (pink) — now light red      */
+  --male-color:   #4da6ff;   /* unchanged — blue                         */
+  --background-color: var(--bg, #0d0d0f);
+  --text-color: var(--text, #f0f0f2);
+}
+
+/* Ensure the f3 SVG + inner container fills the wrapper */
+.f3Wrapper :global(.f3.f3-cont) {
+  width:      100% !important;
+  height:     100% !important;
+  max-height: none !important;
+}
+
+/* Make sure the SVG itself stretches to fill */
+.f3Wrapper :global(svg) {
+  width:  100% !important;
+  height: 100% !important;
+  overflow: visible;
+}
+
+/* ── Pagination dots ── */
+.paginationDots {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  padding: 0;
+}
+.dot:hover { background: var(--muted); transform: scale(1.2); }
+.dotActive {
+  background: var(--accent, #7c5cbf);
+  transform: scale(1.15);
+}
+
+/* Loading overlay */
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  background: var(--bg);
+}
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Empty state ── */
+.empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  padding: 40px;
+  text-align: center;
+}
+.emptyIcon {
+  font-size: 36px;
+  opacity: 0.25;
+  line-height: 1;
+}
+.emptyText {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+.emptyHint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 280px;
+}

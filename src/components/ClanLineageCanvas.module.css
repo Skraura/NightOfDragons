@@ -1,0 +1,373 @@
+/* ── ClanLineageCanvas.module.css — v6.0 ── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adminBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  background: rgba(201,147,42,0.15);
+  color: #c9932a;
+  border: 1px solid rgba(201,147,42,0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0 0 2px;
+}
+
+.sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.refreshBtn {
+  padding: 5px 12px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  font-family: var(--font-body);
+}
+.refreshBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* ── Diversity bar ── */
+.diversityBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  overflow-x: auto;
+}
+
+.divStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.divVal {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.divLabel {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.divSeparator {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.divGrades {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.divGradeRow {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.divGradePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.divGradeCount {
+  font-size: 9px;
+  opacity: 0.7;
+}
+
+.divOwners {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.divOwnerRow {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.divOwnerChip {
+  padding: 1px 7px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.divOwnerMore {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── Species tabs ── */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.tab:hover { background: var(--bg-hover); color: var(--text); }
+.tabActive { font-weight: 600; }
+.tabName  { white-space: nowrap; }
+.tabBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.07);
+  color: var(--hint);
+  transition: background 0.15s, color 0.15s;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ── Lineage sub-tabs ── */
+.lineageTabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  overflow-x: auto;
+}
+.lineageTab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: var(--font-body);
+}
+.lineageTab:hover { background: var(--bg-hover); color: var(--text); }
+.lineageTabActive { font-weight: 600; background: rgba(255,255,255,0.05); }
+.lineageTabCount {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  color: var(--hint);
+}
+
+/* ── Chart area ── */
+.chartWrapper {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.canvasPage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvasLabel {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border);
+}
+
+.canvasDragonCount { color: var(--hint); }
+
+.f3Wrapper {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  --female-color: #e05a5a;
+  --male-color: #4da6ff;
+  --background-color: var(--bg, #0d0d0f);
+  --text-color: var(--text, #f0f0f2);
+}
+
+.f3Wrapper :global(.f3.f3-cont) {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+}
+
+.f3Wrapper :global(svg) {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible;
+}
+
+/* ── Pagination ── */
+.paginationDots {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  padding: 0;
+}
+.dot:hover { background: var(--muted); transform: scale(1.2); }
+.dotActive { transform: scale(1.15); }
+
+/* ── Loading / error states ── */
+.loadingFull, .errorFull {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.errorIcon {
+  font-size: 28px;
+  color: #c44a4a;
+}
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  background: var(--bg);
+}
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent, #c9932a);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Empty state ── */
+.empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  padding: 40px;
+  text-align: center;
+}
+.emptyIcon { font-size: 36px; opacity: 0.25; line-height: 1; }
+.emptyText { font-size: 14px; color: var(--text-secondary); margin: 0; }
+.emptyHint { font-size: 12px; color: var(--text-muted); margin: 0; max-width: 280px; }

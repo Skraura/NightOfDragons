@@ -1,0 +1,236 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Decorative background ── */
+.bg {
+  position: absolute;
+  inset: 42px 0 0 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.scales {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      60deg,
+      transparent,
+      transparent 28px,
+      rgba(92, 114, 245, 0.03) 28px,
+      rgba(92, 114, 245, 0.03) 29px
+    ),
+    repeating-linear-gradient(
+      -60deg,
+      transparent,
+      transparent 28px,
+      rgba(92, 114, 245, 0.03) 28px,
+      rgba(92, 114, 245, 0.03) 29px
+    );
+}
+
+.glow {
+  position: absolute;
+  bottom: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 500px;
+  background: radial-gradient(ellipse at center, rgba(92, 114, 245, 0.08) 0%, transparent 70%);
+}
+
+/* ── Center layout ── */
+.center {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 32px;
+}
+
+/* ── Logo ── */
+.logo {
+  text-align: center;
+  animation: fadeIn 0.4s ease both;
+}
+
+.logoHex {
+  font-size: 56px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 24px rgba(92, 114, 245, 0.3));
+}
+
+.logoTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.logoSub {
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── Card ── */
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.15);
+  animation: fadeIn 0.35s 0.1s ease both;
+}
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  background: var(--surface2);
+  padding: 6px;
+  gap: 4px;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  border-radius: 12px;
+  transition: all 0.15s;
+}
+
+.tab:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.tabActive {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* ── Form ── */
+.form {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.error {
+  font-size: 13px;
+  color: var(--red, #c44a4a);
+  padding: 10px 14px;
+  background: rgba(196,74,74,0.1);
+  border: 1px solid rgba(196,74,74,0.2);
+  border-radius: 10px;
+}
+
+.submit {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+/* ── Quick users ── */
+.quickUsers {
+  padding: 0 32px 32px;
+}
+
+.quickLabel {
+  font-size: 11px;
+  color: var(--hint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.quickList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quickBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.quickBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.quickAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+}
+
+/* ── Footer ── */
+.footer {
+  font-size: 11px;
+  color: var(--hint);
+  animation: fadeIn 0.3s 0.25s ease both;
+}
+
+/* ── Cloud status badge ── */
+.cloudBadge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 99px;
+  margin-bottom: 10px;
+  border: 1px solid transparent;
+  text-align: center;
+}
+.cloud_checking { background: rgba(255,255,255,0.06); color: var(--muted); border-color: var(--border); }
+.cloud_online   { background: rgba(74,158,106,0.12);  color: #4a9e6a;     border-color: rgba(74,158,106,0.3); }
+.cloud_offline  { background: rgba(196,74,74,0.10);   color: #c44a4a;     border-color: rgba(196,74,74,0.25); }
+
+/* ── Admin star pip on quick-select ── */
+.adminPip {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--accent);
+  opacity: 0.8;
+}

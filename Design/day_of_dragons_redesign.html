@@ -1,0 +1,275 @@
+
+<style>
+:root {
+  --bg: #0d0d0f;
+  --surface: #16171b;
+  --surface2: #1e1f26;
+  --border: rgba(255,255,255,0.07);
+  --text: #f0f0f2;
+  --muted: #8a8a9a;
+  --hint: #52525e;
+  --font: 'Inter', system-ui, sans-serif;
+}
+[data-theme="light"] {
+  --bg: #f4f4f6;
+  --surface: #ffffff;
+  --surface2: #f0f0f4;
+  --border: rgba(0,0,0,0.09);
+  --text: #0d0d0f;
+  --muted: #5a5a70;
+  --hint: #a0a0b0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+.app { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; gap: 12px; flex-wrap: wrap; }
+.logo { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
+.logo-icon { width: 30px; height: 30px; }
+.controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.search-wrap { position: relative; }
+.search-wrap input { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 12px 7px 34px; font-size: 13px; width: 200px; outline: none; }
+.search-wrap input::placeholder { color: var(--hint); }
+.search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--hint); }
+.filter-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 7px 13px; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+.filter-btn:hover, .filter-btn.active { border-color: rgba(255,255,255,0.2); color: var(--text); }
+[data-theme="light"] .filter-btn:hover, [data-theme="light"] .filter-btn.active { border-color: rgba(0,0,0,0.2); }
+.settings-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 7px 10px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s; }
+.settings-btn:hover { color: var(--text); }
+.count-line { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; transition: transform 0.15s, border-color 0.15s; cursor: default; }
+.card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.13); }
+[data-theme="light"] .card:hover { border-color: rgba(0,0,0,0.16); }
+.card-top-bar { height: 3px; width: 100%; }
+.card-inner { padding: 16px 18px 18px; }
+.card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.card-title-row { display: flex; align-items: center; gap: 8px; }
+.dragon-icon { font-size: 18px; line-height: 1; }
+.dragon-name { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+.heart-btn { background: none; border: none; color: var(--hint); cursor: pointer; font-size: 16px; padding: 2px; line-height: 1; transition: color 0.15s; }
+.heart-btn:hover, .heart-btn.liked { color: #e55; }
+.card-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; padding: 3px 9px; border-radius: 99px; border: 1px solid; line-height: 1.4; white-space: nowrap; }
+.owner-tag { font-size: 11px; color: var(--hint); }
+.card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-cell { background: var(--surface2); border-radius: 8px; padding: 9px 11px; }
+.stat-label { font-size: 10.5px; color: var(--hint); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.stat-value { font-size: 13px; font-weight: 500; }
+.stat-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.stat-bar-bg { flex: 1; height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.stat-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+.gender-m { color: #4da6ff; }
+.gender-f { color: #ff7eb3; }
+.settings-panel { display: none; position: fixed; top: 0; right: 0; width: 280px; height: 100vh; background: var(--surface); border-left: 1px solid var(--border); padding: 24px 20px; z-index: 100; flex-direction: column; gap: 20px; }
+.settings-panel.open { display: flex; }
+.settings-title { font-size: 15px; font-weight: 600; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; }
+.settings-label { font-size: 13px; color: var(--muted); }
+.toggle { position: relative; width: 38px; height: 22px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--hint); border-radius: 99px; transition: 0.2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + .toggle-slider { background: #5c72f5; }
+.toggle input:checked + .toggle-slider:before { transform: translateX(16px); }
+.close-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; align-self: flex-end; line-height: 1; }
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; }
+.overlay.open { display: block; }
+.no-results { text-align: center; color: var(--muted); padding: 60px 0; font-size: 14px; }
+</style>
+
+<div class="overlay" id="overlay" onclick="closeSettings()"></div>
+
+<div class="settings-panel" id="settingsPanel">
+  <button class="close-btn" onclick="closeSettings()">✕</button>
+  <div class="settings-title">Settings</div>
+  <div class="settings-row">
+    <span class="settings-label">Light theme</span>
+    <label class="toggle">
+      <input type="checkbox" id="themeToggle" onchange="toggleTheme(this)">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  <div class="settings-row">
+    <span class="settings-label">Show owner</span>
+    <label class="toggle">
+      <input type="checkbox" id="ownerToggle" checked onchange="render()">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+</div>
+
+<div class="app" id="appRoot">
+  <div class="topbar">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 30 30" fill="none">
+        <path d="M15 3 C8 3 3 9 3 15 C3 21 8 27 15 27 C22 27 27 21 27 15 C27 9 22 3 15 3Z" fill="#5c72f5" opacity="0.15"/>
+        <path d="M6 16 L10 10 L15 20 L20 8 L24 16" stroke="#5c72f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="15" cy="15" r="3" fill="#5c72f5"/>
+      </svg>
+      Day of Dragons
+    </div>
+    <div class="controls">
+      <div class="search-wrap">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/></svg>
+        <input type="text" placeholder="Search dragons..." id="searchInput" oninput="render()">
+      </div>
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('female',this)">♀ Female</button>
+      <button class="filter-btn" onclick="setFilter('male',this)">♂ Male</button>
+      <button class="settings-btn" onclick="openSettings()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.433-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.892-1.64-.901-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>
+        Settings
+      </button>
+    </div>
+  </div>
+  <div class="count-line" id="countLine"></div>
+  <div class="grid" id="dragonGrid"></div>
+</div>
+
+<script>
+const DRAGONS = [
+  { name:"Bloodie", owner:"Skraura", species:"Broodwatcher", gender:"F", age:"Adult", skin:"Crimson", dominant:true, purity:"U.P.", stats:"A++", liked:true },
+  { name:"Thunder", owner:"Skraura", species:"Blitz Striker", gender:"F", age:"Adult", skin:"Gold", dominant:false, purity:"Pure", stats:"A++", liked:false },
+  { name:"Golden", owner:"Skraura", species:"Acid Spitter Drake", gender:"F", age:"Adult", skin:"Gold", dominant:true, purity:"U.P.", stats:"A++", liked:false },
+  { name:"Chessy", owner:"Skraura", species:"Flame Stalker", gender:"F", age:"Adult", skin:"Gold", dominant:true, purity:null, stats:"A++", liked:false },
+  { name:"Goldie", owner:"Skraura", species:"Shadow Scale", gender:"F", age:"Adult", skin:"Gold", dominant:true, purity:"U.P.", stats:"A++", liked:false },
+  { name:"Misty", owner:"Skraura²", species:"Shadow Scale", gender:"F", age:"Adult", skin:"Leucistic", dominant:true, purity:"U.P.", stats:"A++", liked:false },
+  { name:"Ember", owner:"Skraura", species:"Flame Stalker", gender:"M", age:"Juvi", skin:"Crimson", dominant:false, purity:"Pure", stats:"A+", liked:false },
+  { name:"Shade", owner:"Skraura", species:"Shadow Scale", gender:"M", age:"Adult", skin:"Melanistic", dominant:true, purity:"U.P.", stats:"A", liked:false },
+  { name:"Bolt", owner:"Skraura", species:"Blitz Striker", gender:"M", age:"Baby", skin:"Gold", dominant:false, purity:null, stats:"B+", liked:false },
+  { name:"Mist", owner:"Skraura²", species:"Acid Spitter Drake", gender:"F", age:"Adult", skin:"Leumelan", dominant:true, purity:"U.P.", stats:"A-", liked:false },
+  { name:"Frostbite", owner:"Skraura", species:"Broodwatcher", gender:"M", age:"Adult", skin:"Leucistic", dominant:false, purity:"Pure", stats:"C+", liked:false },
+  { name:"Pyro", owner:"Skraura", species:"Flame Stalker", gender:"M", age:"Adult", skin:"Melanistic", dominant:true, purity:"U.P.", stats:"D", liked:false },
+];
+
+const SPECIES_CONFIG = {
+  "Shadow Scale":       { color:"#7c5cbf", bg:"rgba(124,92,191,0.12)", icon:"🌙" },
+  "Flame Stalker":      { color:"#e5713a", bg:"rgba(229,113,58,0.12)", icon:"🔥" },
+  "Acid Spitter Drake": { color:"#4caf50", bg:"rgba(76,175,80,0.12)", icon:"☣" },
+  "Blitz Striker":      { color:"#f5c542", bg:"rgba(245,197,66,0.12)", icon:"⚡" },
+  "Broodwatcher":       { color:"#4db6ac", bg:"rgba(77,182,172,0.12)", icon:"👁" },
+};
+
+const SKIN_COLORS = {
+  "Crimson":    "#c0392b",
+  "Gold":       "#d4ac0d",
+  "Leucistic":  "#a8c4d0",
+  "Leumelan":   "#7f8c8d",
+  "Melanistic": "#2c3e50",
+};
+
+const STATS_ORDER = ["F","E","D-","D","D+","C-","C","C+","B-","B","B+","A-","A","A+","A++"];
+
+function statsColor(s) {
+  const i = STATS_ORDER.indexOf(s);
+  if(i < 0) return "#888";
+  const t = i / (STATS_ORDER.length - 1);
+  const r = Math.round(220 - t * 160);
+  const g = Math.round(60 + t * 160);
+  return `rgb(${r},${g},60)`;
+}
+function statsWidth(s) {
+  const i = STATS_ORDER.indexOf(s);
+  return i < 0 ? 5 : Math.round(((i+1)/(STATS_ORDER.length)) * 100);
+}
+
+let filter = 'all';
+const likedState = {};
+
+function setFilter(f, el) {
+  filter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function toggleLike(name) {
+  likedState[name] = !likedState[name];
+  render();
+}
+
+function render() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const showOwner = document.getElementById('ownerToggle').checked;
+  let data = DRAGONS.map(d => ({ ...d, liked: likedState[d.name] !== undefined ? likedState[d.name] : d.liked }));
+  if(filter === 'female') data = data.filter(d => d.gender === 'F');
+  if(filter === 'male') data = data.filter(d => d.gender === 'M');
+  if(q) data = data.filter(d =>
+    d.name.toLowerCase().includes(q) ||
+    d.species.toLowerCase().includes(q) ||
+    d.skin.toLowerCase().includes(q) ||
+    d.owner.toLowerCase().includes(q)
+  );
+  document.getElementById('countLine').textContent = `Showing ${data.length} of ${DRAGONS.length} dragons`;
+  const grid = document.getElementById('dragonGrid');
+  if(!data.length) { grid.innerHTML = '<div class="no-results">No dragons found</div>'; return; }
+  grid.innerHTML = data.map(d => {
+    const sc = SKIN_COLORS[d.skin] || "#888";
+    const sp = SPECIES_CONFIG[d.species] || { color:"#5c72f5", bg:"rgba(92,114,245,0.12)", icon:"🐉" };
+    const gc = d.gender === 'M' ? '#4da6ff' : '#ff7eb3';
+    const glyph = d.gender === 'M' ? '♂' : '♀';
+    const gClass = d.gender === 'M' ? 'gender-m' : 'gender-f';
+    const sc2 = statsColor(d.stats);
+    const sw = statsWidth(d.stats);
+    return `<div class="card">
+      <div class="card-top-bar" style="background:${sc}"></div>
+      <div class="card-inner">
+        <div class="card-header">
+          <div>
+            <div class="card-title-row">
+              <span class="dragon-icon">${sp.icon}</span>
+              <span class="dragon-name">${d.name}</span>
+              <span class="${gClass}" style="font-size:14px;font-weight:600;">${glyph}</span>
+            </div>
+            ${showOwner ? `<div class="owner-tag" style="margin-top:3px;">Owner: <b>${d.owner}</b></div>` : ''}
+          </div>
+          <button class="heart-btn ${d.liked?'liked':''}" onclick="toggleLike('${d.name}')">${d.liked?'♥':'♡'}</button>
+        </div>
+        <div class="card-meta">
+          <span class="badge" style="color:${sp.color};border-color:${sp.color}30;background:${sp.bg};">${sp.icon} ${d.species}</span>
+          <span class="badge" style="color:${gc};border-color:${gc}30;background:${gc}15;">${glyph} ${d.gender==='M'?'Male':'Female'}</span>
+          <span class="badge" style="color:var(--muted);border-color:var(--border);background:var(--surface2);">${d.age}</span>
+        </div>
+        <div class="card-stats">
+          <div class="stat-cell">
+            <div class="stat-label">Skin</div>
+            <div class="stat-value" style="color:${sc};">${d.skin}</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Dominant</div>
+            <div class="stat-value" style="color:${d.dominant?'#5c72f5':'var(--hint)'};">${d.dominant?'✓ Dom':'—'}</div>
+          </div>
+          ${d.purity ? `<div class="stat-cell">
+            <div class="stat-label">Purity</div>
+            <div class="stat-value" style="color:#a78bfa;">${d.purity}</div>
+          </div>` : `<div class="stat-cell">
+            <div class="stat-label">Purity</div>
+            <div class="stat-value" style="color:var(--hint);">—</div>
+          </div>`}
+          <div class="stat-cell">
+            <div class="stat-label">Stats</div>
+            <div class="stat-bar-wrap">
+              <span class="stat-value" style="color:${sc2};min-width:28px;">${d.stats}</span>
+              <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${sw}%;background:${sc2};"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleTheme(el) {
+  document.documentElement.setAttribute('data-theme', el.checked ? 'light' : '');
+}
+function openSettings() {
+  document.getElementById('settingsPanel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settingsPanel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+render();
+</script>
