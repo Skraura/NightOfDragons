@@ -128,49 +128,46 @@ export const CLAN_ROLES = ['Fighter', 'Breeder']
 // ── Traits ─────────────────────────────────────────────────────────────────────
 export const TRAIT_POINTS = [1, 2, 3, 4]
 export const TRAIT_DEFS = {
-  dominant:   { label: 'Dominant',  evolved: 'Dominant (4pts)',  icon: '👑' },
-  scavenger:  { label: 'Scavenger', evolved: 'Scavenger (4pts)', icon: '🌿' },
-  fast:       { label: 'Fast',      evolved: 'Fast (4pts)',       icon: '⚡' },
+  dominant:   { label: 'Social',    evolved: 'Nesting',   levelNames: ['', 'Social', 'Social', 'Social', 'Nesting'],   icon: '👑' },
+  scavenger:  { label: 'Scavenger', evolved: 'Survivor',  levelNames: ['', 'Scavenger', 'Scavenger', 'Scavenger', 'Survivor'], icon: '🌿' },
+  fast:       { label: 'Fast',      evolved: 'Fast',      levelNames: ['', 'Movement', 'Movement', 'Movement', 'Fast'], icon: '⚡' },
 }
 export const TRAIT_KEYS = ['dominant', 'scavenger', 'fast']
 
 // ── Gender ─────────────────────────────────────────────────────────────────────
 export const GENDERS = [
-  { value: 'M', label: '♂ Male' },
-  { value: 'F', label: '♀ Female' },
+  { value: 'M', label: '♂ Male',   searchKey: 'Male' },
+  { value: 'F', label: '♀ Female', searchKey: 'Female' },
 ]
 
 // ── Stat groups — 18 total ─────────────────────────────────────────────────────
 // Removed from v5.4 (22 → 18):
 //   stat_agility, stat_armor          — don't exist in-game
 //   stat_venom (biological)           — consolidated into stat_venom_resistance
-//   stat_bile_production              — species-specific, removed from global boxes
-// Renamed: stat_venom_resistance label stays 'Venom Resistance'
+//   Stat layout matches in-game order as of v7.3.0
+//   Removed: stat_growth_rate
+//   Added:   stat_bile_production
 export const STAT_GROUPS = {
-  combat: {
-    label: 'Combat',
-    stats: [
-      { key: 'stat_strength',           label: 'Strength' },
-      { key: 'stat_bite_force',         label: 'Bite Force' },
-      { key: 'stat_power',              label: 'Power' },
-      { key: 'stat_impact_resistance',  label: 'Impact Resistance' },
-      { key: 'stat_pierce_resistance',  label: 'Pierce Resistance' },
-    ],
-  },
-  survival: {
-    label: 'Survival',
+  body: {
+    label: 'Body',
     stats: [
       { key: 'stat_life_expectancy',     label: 'Life Expectancy' },
+      { key: 'stat_scale_thickness',     label: 'Scale Thickness' },
       { key: 'stat_stamina',             label: 'Endurance' },
-      { key: 'stat_growth_rate',         label: 'Growth Rate' },
+      { key: 'stat_bile_production',     label: 'Bile Production' },
+      { key: 'stat_bite_force',          label: 'Bite Force' },
+      { key: 'stat_power',               label: 'Power' },
+      { key: 'stat_strength',            label: 'Strength' },
       { key: 'stat_nutrient_absorption', label: 'Nutrient Absorption' },
       { key: 'stat_water_retention',     label: 'Water Retention' },
-      { key: 'stat_toxin_tolerance',     label: 'Toxin Tolerance' },
     ],
   },
-  elemental: {
-    label: 'Elemental Resistances',
+  resistances: {
+    label: 'Resistances',
     stats: [
+      { key: 'stat_toxin_tolerance',      label: 'Toxin Tolerance' },
+      { key: 'stat_impact_resistance',    label: 'Impact Resistance' },
+      { key: 'stat_pierce_resistance',    label: 'Pierce Resistance' },
       { key: 'stat_fire_resistance',      label: 'Fire Resistance' },
       { key: 'stat_frost_resistance',     label: 'Frost Resistance' },
       { key: 'stat_plasma_resistance',    label: 'Plasma Resistance' },
@@ -179,15 +176,11 @@ export const STAT_GROUPS = {
       { key: 'stat_venom_resistance',     label: 'Venom Resistance' },
     ],
   },
-  biological: {
-    label: 'Biological',
-    stats: [
-      { key: 'stat_scale_thickness', label: 'Scale Thickness' },
-    ],
-  },
 }
 
 export const ALL_STAT_KEYS = Object.values(STAT_GROUPS).flatMap(g => g.stats.map(s => s.key))
+// Recessive variants — same keys prefixed with 'r_'
+export const ALL_RSTAT_KEYS = ALL_STAT_KEYS.map(k => `r_${k}`)
 export const STAT_LABELS   = Object.fromEntries(Object.values(STAT_GROUPS).flatMap(g => g.stats.map(s => [s.key, s.label])))
 export const SPECIES_LIST  = Object.entries(SPECIES_FULL).map(([code, name]) => ({ code, name }))
 

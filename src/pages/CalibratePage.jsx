@@ -1,3 +1,14 @@
+/**
+ * CalibratePage — Beta1.1
+ *
+ * Changes:
+ *  - Calibration is now stored as percentage ratios (xPct/yPct/wPct/hPct),
+ *    so it adapts automatically to any screen resolution.
+ *  - Boxes are drawn from those ratios × current canvas size, not raw pixels.
+ *  - Dev-only "Save as Bundled" button writes the calibration to
+ *    resources/bundled-calibration.json so it ships with the next build.
+ *  - Progress indicator shows pct-based completeness.
+ */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { CAPTURE_FIELDS } from '../lib/dragonData'
 import styles from './CalibratePage.module.css'
@@ -10,31 +21,56 @@ const COLORS = [
   '#d87050','#50b8c8','#c8a050','#80c050',
 ]
 
+/** Convert a pct box { xPct, yPct, wPct, hPct } to canvas pixels */
+function pctToCanvas(pctBox, cw, ch) {
+  return {
+    x: pctBox.xPct * cw,
+    y: pctBox.yPct * ch,
+    w: pctBox.wPct * cw,
+    h: pctBox.hPct * ch,
+  }
+}
+
+/** Convert canvas-pixel coords to pct box */
+function canvasToPct(pixBox, cw, ch) {
+  return {
+    xPct: pixBox.x / cw,
+    yPct: pixBox.y / ch,
+    wPct: pixBox.w / cw,
+    hPct: pixBox.h / ch,
+  }
+}
+
 export default function CalibratePage() {
   const canvasRef = useRef(null)
 
-  const [screenshot, setScreenshot] = useState(null)   // base64 PNG
+  const [screenshot, setScreenshot] = useState(null)
   const [userId, setUserId]         = useState(null)
+  const [role, setRole]             = useState('member')   // set from calibration:init
   const [resolution, setResolution] = useState('')
+  // boxes stored as pct format { fieldKey: { xPct, yPct, wPct, hPct } }
   const [boxes, setBoxes]           = useState({})
   const [activeField, setActiveField] = useState(CAPTURE_FIELDS[0].key)
   const [drawing, setDrawing]       = useState(false)
   const [startPt, setStartPt]       = useState(null)
   const [currentRect, setCurrentRect] = useState(null)
-  const [saveState, setSaveState]   = useState('idle')
+  const [saveState, setSaveState]   = useState('idle')   // idle|saving|saved|error
+
+  const isDev = role === 'dev'
 
   // ── Receive init data from main process ──
   useEffect(() => {
-    window.api?.calibration.onInit((data) => {
+    window.api?.calibration.onInit(async (data) => {
       setScreenshot(data.screenshot)
       setUserId(data.userId)
       setResolution(data.resolution)
-      window.api.boxConfig.get({ resolution: data.resolution })
-        .then(cfg => { if (cfg) setBoxes(cfg) })
+      setRole(data.role || 'member')
+      const pct = await window.api.boxConfig.getPct()
+      if (pct) setBoxes(pct)
     })
   }, [])
 
-  // ── Redraw canvas whenever screenshot or boxes change ──
+  // ── Redraw canvas ──
   useEffect(() => {
     if (!screenshot || !canvasRef.current) return
     redrawCanvas()
@@ -56,11 +92,14 @@ export default function CalibratePage() {
       ctx.drawImage(img, 0, 0)
       ctx.fillStyle = 'rgba(0,0,0,0.4)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
+
       CAPTURE_FIELDS.forEach((f, i) => {
-        const box = boxes[f.key]
-        if (!box) return
-        drawBox(ctx, box, COLORS[i % COLORS.length], f.label, false)
+        const pctBox = boxes[f.key]
+        if (!pctBox) return
+        const pixBox = pctToCanvas(pctBox, canvas.width, canvas.height)
+        drawBox(ctx, pixBox, COLORS[i % COLORS.length], f.label, false)
       })
+
       if (inProgress) {
         const fieldIdx = CAPTURE_FIELDS.findIndex(f => f.key === activeField)
         drawBox(ctx, inProgress, COLORS[fieldIdx % COLORS.length], null, true)
@@ -89,23 +128,12 @@ export default function CalibratePage() {
   }
 
   // ── DPI-aware canvas coordinate conversion ──
-  // CRITICAL FIX: We must map from CSS pixels → canvas pixels correctly.
-  // The canvas element may be scaled by CSS (object-fit: contain), and the
-  // screenshot may have been taken at a different DPI than the display.
-  // We use getBoundingClientRect for the CSS-displayed size, then scale to
-  // the canvas's intrinsic pixel dimensions.
   function getCanvasPt(e) {
     const canvas = canvasRef.current
     if (!canvas) return { x: 0, y: 0 }
-
-    const rect = canvas.getBoundingClientRect()
-
-    // Scale factors: canvas intrinsic pixels / CSS display size
+    const rect   = canvas.getBoundingClientRect()
     const scaleX = canvas.width  / rect.width
     const scaleY = canvas.height / rect.height
-
-    // Apply devicePixelRatio compensation if canvas was rendered at 1:1
-    // (getBoundingClientRect already returns CSS pixels which account for DPR)
     return {
       x: Math.round((e.clientX - rect.left) * scaleX),
       y: Math.round((e.clientY - rect.top)  * scaleY),
@@ -136,17 +164,20 @@ export default function CalibratePage() {
   function onMouseUp(e) {
     if (!drawing || !startPt) return
     e.preventDefault()
-    const pt  = getCanvasPt(e)
-    const box = {
+    const canvas = canvasRef.current
+    const pt     = getCanvasPt(e)
+    const pixBox = {
       x: Math.min(startPt.x, pt.x),
       y: Math.min(startPt.y, pt.y),
       w: Math.abs(pt.x - startPt.x),
       h: Math.abs(pt.y - startPt.y),
     }
-    if (box.w > 5 && box.h > 5) {
-      const next = { ...boxes, [activeField]: box }
+    if (pixBox.w > 5 && pixBox.h > 5 && canvas) {
+      // Store as pct ratios
+      const pctBox = canvasToPct(pixBox, canvas.width, canvas.height)
+      const next   = { ...boxes, [activeField]: pctBox }
       setBoxes(next)
-      const curIdx = CAPTURE_FIELDS.findIndex(f => f.key === activeField)
+      const curIdx   = CAPTURE_FIELDS.findIndex(f => f.key === activeField)
       const nextField = CAPTURE_FIELDS.slice(curIdx + 1).find(f => !next[f.key])
       if (nextField) setActiveField(nextField.key)
     }
@@ -155,7 +186,6 @@ export default function CalibratePage() {
     setCurrentRect(null)
   }
 
-  // Also handle mouse leaving the canvas while drawing
   function onMouseLeave(e) {
     if (drawing) onMouseUp(e)
   }
@@ -165,13 +195,15 @@ export default function CalibratePage() {
     setBoxes(prev => { const n = { ...prev }; delete n[fieldKey]; return n })
   }
 
+  // Save calibration — always writes to bundled-calibration.json (Dev only)
   async function handleSave() {
-    if (!userId || !resolution) return
+    if (!resolution) return
     setSaveState('saving')
     try {
-      await window.api.boxConfig.save({ resolution, boxes })
+      const res = await window.api.boxConfig.save({ resolution, boxes })
+      if (!res?.ok) throw new Error(res?.error || 'Unknown error')
       setSaveState('saved')
-      setTimeout(() => window.api.calibration.close(), 1000)
+      setTimeout(() => window.api.calibration.close(), 1200)
     } catch (err) {
       setSaveState('error')
       console.error(err)
@@ -179,6 +211,8 @@ export default function CalibratePage() {
   }
 
   const configuredCount = Object.keys(boxes).length
+  const totalFields     = CAPTURE_FIELDS.length
+  const pctComplete     = Math.round((configuredCount / totalFields) * 100)
 
   return (
     <div className={styles.root}>
@@ -206,8 +240,14 @@ export default function CalibratePage() {
         </div>
 
         <p className={styles.instructions}>
-          Click and drag on the game screenshot to define each field's location.
+          Drag boxes over the game UI. Positions are saved as <strong>percentages</strong> and adapt automatically to any screen resolution.
         </p>
+
+        {/* Progress bar */}
+        <div className={styles.progressBar}>
+          <div className={styles.progressFill} style={{ width: `${pctComplete}%` }} />
+        </div>
+        <p className={styles.progressLabel}>{configuredCount} / {totalFields} fields ({pctComplete}%)</p>
 
         <div className={styles.fieldList}>
           {CAPTURE_FIELDS.map((f, i) => {
@@ -231,7 +271,6 @@ export default function CalibratePage() {
         </div>
 
         <div className={styles.panelFooter}>
-          <span className={styles.count}>{configuredCount} / {CAPTURE_FIELDS.length}</span>
           <div className={styles.footerBtns}>
             <button className="btn btn-ghost btn-sm" onClick={() => window.api.calibration.close()}>
               Cancel
@@ -247,6 +286,9 @@ export default function CalibratePage() {
                : 'Save Layout'}
             </button>
           </div>
+          <p className={styles.bundledLabel}>
+            Saves to <code>bundled-calibration.json</code> — ships with the next build for all members
+          </p>
         </div>
       </div>
     </div>

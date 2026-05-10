@@ -1,8 +1,10 @@
 /* ── List container ── */
 .list {
   flex: 1;
+  min-height: 0;          /* Beta1.1 fix: allow flex child to shrink below content size */
   overflow-y: auto;
   padding: 24px;
+  padding-bottom: 40px;   /* Beta1.1 fix: bottom breathing room so last row isn't clipped */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 14px;
@@ -35,6 +37,7 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  min-height: 200px;    /* cards never shrink — list scrolls instead */
 }
 .card:hover {
   transform: translateY(-2px);
@@ -59,23 +62,48 @@
   margin-bottom: 10px;
 }
 
-.titleRow { display: flex; align-items: center; gap: 7px; }
+.titleRow { display: flex; align-items: center; gap: 7px; flex-wrap: nowrap; }
 
-.speciesIcon { font-size: 17px; line-height: 1; }
+.speciesIcon { font-size: 17px; line-height: 1; flex-shrink: 0; }
 
-.name {
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
+/* Line 1: Account · Species */
+.accountSpecies {
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
+}
+.titleDot {
+  margin: 0 3px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Line 2: Dragon name */
+.dragonName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* kept for backwards compat */
+.name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .unnamed { color: var(--hint); font-style: italic; font-weight: 400; }
 
-.owner { font-size: 11px; color: var(--hint); margin-top: 3px; }
+.owner { font-size: 11px; color: var(--hint); margin-top: 2px; }
 
 .elderBadge {
   font-size: 9px;

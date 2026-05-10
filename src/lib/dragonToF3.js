@@ -5,6 +5,7 @@
  */
 
 import { SPECIES_FULL, ALL_STAT_KEYS, GRADES } from './dragonData'
+import { buildSafeLineage } from './lineageEngine'
 
 const GRADES_ORDER = [...GRADES]
 
@@ -126,13 +127,19 @@ export function splitIntoLineageGroups(nodes) {
 export function dragonsBySpeciesToF3(allDragons, speciesName) {
   const code     = Object.entries(SPECIES_FULL).find(([, name]) => name === speciesName)?.[0]
   const filtered = allDragons.filter(d => d.species === code || d.species === speciesName)
-  return dragonToF3(filtered)
+  // Run safe lineage engine — strips cycles and invalid edges before converting
+  const { nodes: safeNodes, warnings } = buildSafeLineage(filtered)
+  if (warnings.length) console.warn('[Lineage]', warnings.map(w => w.message).join(' | '))
+  return dragonToF3(safeNodes)
 }
 
 /** Returns an array of f3-node groups, each group being a connected lineage. */
 export function dragonsBySpeciesGrouped(allDragons, speciesName) {
   const code     = Object.entries(SPECIES_FULL).find(([, name]) => name === speciesName)?.[0]
   const filtered = allDragons.filter(d => d.species === code || d.species === speciesName)
-  const nodes    = dragonToF3(filtered)
-  return splitIntoLineageGroups(nodes)
+  // Safe preprocessing
+  const { nodes: safeNodes, warnings } = buildSafeLineage(filtered)
+  if (warnings.length) console.warn('[Lineage]', warnings.map(w => w.message).join(' | '))
+  const f3nodes = dragonToF3(safeNodes)
+  return splitIntoLineageGroups(f3nodes)
 }

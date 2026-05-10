@@ -13,6 +13,7 @@ import f3 from 'family-chart'
 import 'family-chart/styles/family-chart.css'
 import { SPECIES_FULL, SPECIES_CONFIG, ALL_STAT_KEYS, GRADES } from '../lib/dragonData'
 import { dragonToF3, splitIntoLineageGroups } from '../lib/dragonToF3'
+import { buildSafeLineage } from '../lib/lineageEngine'
 import useLineagePrefs from '../hooks/useLineagePrefs'
 import styles from './ClanLineageCanvas.module.css'
 
@@ -370,13 +371,24 @@ export default function ClanLineageCanvas() {
   // Build lineage groups for selected species
   const filtered = allDragons.filter(d => d.species === speciesCode || d.species === selected)
 
+  // Run safety engine first — detect cycles, invalid edges, renesting
+  const { nodes: safeFiltered, warnings: lineageWarnings } = (() => {
+    if (!filtered.length) return { nodes: [], warnings: [] }
+    try {
+      return buildSafeLineage(filtered)
+    } catch (e) {
+      console.error('[Lineage] Safety engine failed:', e)
+      return { nodes: filtered, warnings: [{ message: 'Lineage safety check failed — displaying raw data.' }] }
+    }
+  })()
+
   // Convert to f3 nodes — we need to preserve ownerUsername in node.data
   const f3Nodes = (() => {
-    if (!filtered.length) return []
-    const nodes = dragonToF3(filtered)
+    if (!safeFiltered.length) return []
+    const nodes = dragonToF3(safeFiltered)
     // Inject ownerUsername into each node's data
     const ownerMap = {}
-    filtered.forEach(d => { ownerMap[String(d.id)] = d.ownerUsername })
+    safeFiltered.forEach(d => { ownerMap[String(d.id)] = d.ownerUsername })
     nodes.forEach(n => { n.data.ownerUsername = ownerMap[n.id] || '' })
     return nodes
   })()
@@ -390,6 +402,21 @@ export default function ClanLineageCanvas() {
   }
 
   const safePage = Math.min(activePage, Math.max(0, totalPages - 1))
+
+  // Build mate pairs for selected species
+  const matePairs = (() => {
+    const seen = new Set()
+    const pairs = []
+    filtered.forEach(d => {
+      if (!d.mate_id) return
+      const pairKey = [d.id, d.mate_id].sort().join('_')
+      if (seen.has(pairKey)) return
+      seen.add(pairKey)
+      const mate = filtered.find(m => m.id === d.mate_id) || allDragons.find(m => m.id === d.mate_id)
+      if (mate) pairs.push({ a: d, b: mate })
+    })
+    return pairs
+  })()
 
   if (loading) {
     return (
@@ -504,14 +531,27 @@ export default function ClanLineageCanvas() {
             <p className={styles.emptyHint}>Members can add dragons via the Registry tab.</p>
           </div>
         ) : (
-          <ClanChartCanvas
-            key={`${selected}-page-${safePage}`}
-            data={lineageGroups[safePage] || []}
-            speciesConfig={speciesConfig}
-            prefs={prefs}
-            groupIndex={safePage}
-            totalGroups={totalPages}
-          />
+          <>
+            {lineageWarnings.length > 0 && (
+              <div className={styles.lineageWarnings}>
+                <span className={styles.lineageWarningIcon}>⚠</span>
+                <div>
+                  <strong>Lineage issues detected — some edges removed to prevent crash:</strong>
+                  <ul style={{ margin: '4px 0 0', paddingLeft: 16 }}>
+                    {lineageWarnings.map((w, i) => <li key={i} style={{ fontSize: 11 }}>{w.message}</li>)}
+                  </ul>
+                </div>
+              </div>
+            )}
+            <ClanChartCanvas
+              key={`${selected}-page-${safePage}`}
+              data={lineageGroups[safePage] || []}
+              speciesConfig={speciesConfig}
+              prefs={prefs}
+              groupIndex={safePage}
+              totalGroups={totalPages}
+            />
+          </>
         )}
       </div>
 
@@ -529,6 +569,61 @@ export default function ClanLineageCanvas() {
           ))}
         </div>
       )}
+
+      {/* Mate Pairs panel */}
+      {matePairs.length > 0 && (
+        <div className={styles.matePairsPanel}>
+          <h3 className={`cinzel ${styles.matePairsTitle}`} style={{ color: speciesConfig?.color }}>
+            💕 Mate Pairs — {selected}
+            <span style={{ fontSize:11, fontWeight:400, color:'var(--muted)', marginLeft:8 }}>
+              {matePairs.length} pair{matePairs.length !== 1 ? 's' : ''}
+            </span>
+          </h3>
+          <p className={styles.matePairsHint}>
+            Primary mates for this species. Click a dragon card in the registry to see their full harem list.
+          </p>
+          <div className={styles.matePairsGrid}>
+            {matePairs.map(({ a, b }) => {
+              const speciesMismatch = a.species !== b.species
+              const haremA = Array.isArray(a.harem) ? a.harem.length : 0
+              const haremB = Array.isArray(b.harem) ? b.harem.length : 0
+              return (
+                <div key={`${a.id}_${b.id}`} className={styles.matePairCard}
+                     style={{ borderColor: speciesMismatch ? '#e05a5a' : `${speciesConfig?.color}40` }}>
+                  {speciesMismatch && (
+                    <div style={{ gridColumn:'1/-1', fontSize:10, color:'#e05a5a', marginBottom:4 }}>
+                      ⚠ Inter-species pair — {a.species} × {b.species}
+                    </div>
+                  )}
+                  <MateCard dragon={a} accentColor={speciesConfig?.color} haremCount={haremA} />
+                  <div className={styles.mateHeart}>💕</div>
+                  <MateCard dragon={b} accentColor={speciesConfig?.color} haremCount={haremB} />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MateCard({ dragon: d, accentColor, haremCount = 0 }) {
+  const name = d.name || d.ownerUsername || d.player_name || '?'
+  const glyph = d.gender === 'M' ? '♂' : d.gender === 'F' ? '♀' : '?'
+  return (
+    <div className={styles.mateCardInner}>
+      <span className={styles.mateCardName}>{name}</span>
+      {d.name && <span className={styles.mateCardOwner}>{d.ownerUsername || d.player_name}</span>}
+      <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:2 }}>
+        <span className={styles.mateCardGender} style={{ color: d.gender === 'M' ? '#4da6ff' : '#e05a5a' }}>{glyph}</span>
+        {d.skin_dominant && <span className={styles.mateCardSkin}>{d.skin_dominant}</span>}
+        {haremCount > 0 && (
+          <span style={{ fontSize:9, background:'rgba(92,114,245,0.2)', color:'var(--accent)', padding:'1px 5px', borderRadius:4 }}>
+            +{haremCount} harem
+          </span>
+        )}
+      </div>
     </div>
   )
 }

@@ -178,3 +178,41 @@
   display: flex;
   gap: 6px;
 }
+
+/* ── Beta1.1: Progress bar ── */
+.progressBar {
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 6px 0 2px;
+}
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+.progressLabel {
+  font-size: 11px;
+  color: var(--hint);
+  margin: 0 0 8px;
+}
+
+/* ── Beta1.1: Dev bundled section ── */
+.bundledSection {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.bundledLabel {
+  font-size: 11px;
+  color: rgba(82,145,245,0.8);
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+.bundledExists {
+  color: #4a9e6a;
+  font-weight: 600;
+}

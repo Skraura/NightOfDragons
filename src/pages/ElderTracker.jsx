@@ -118,7 +118,7 @@ function ElderCard({ dragon: d, progress: p }) {
           <span className={styles.cardMass}>Class {p.class} · {p.mass}</span>
         </div>
         <div className={styles.cardName}>
-          {d.name || <em className={styles.unnamed}>Unnamed</em>}
+          {d.name || d.player_name || <em className={styles.unnamed}>Unnamed</em>}
         </div>
         {(d.skin_dominant || d.gender) && (
           <div className={styles.cardMeta}>
@@ -138,8 +138,8 @@ function ElderCard({ dragon: d, progress: p }) {
         ) : (
           <>
             <div className={styles.ticksRow}>
-              <span className={`cinzel ${styles.ticksVal}`}>{p.ticks.toFixed(2)}</span>
-              <span className={styles.ticksOf}>/ {p.elderTicks}</span>
+              <span className={`cinzel ${styles.ticksVal}`}>{Math.round(p.pct * 100)}%</span>
+              <span className={styles.ticksOf}>elder progress</span>
               <span className={styles.ticksPct}>{pctDisplay}%</span>
             </div>
             <div className={styles.progressBar}>

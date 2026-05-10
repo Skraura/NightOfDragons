@@ -1,21 +1,16 @@
 /**
- * Screenshot Service — Electron v29+ compatible
+ * Screenshot Service — v2.0 (Patch 8.1.1)
  *
- * In Electron v29, desktopCapturer only works in the renderer process.
- * Strategy:
- *   1. Main process sends 'screenshot:request' to renderer
- *   2. Renderer's preload captures screen with desktopCapturer, returns base64 via IPC
- *   3. Fallback: OS tools (scrot on Linux, PowerShell on Windows)
- *
- * The ipcMain listener for 'screenshot:result' is set up in main.js.
- * captureService calls takeScreenshot(mainWindow, ipcMain).
+ * Fix: compress screenshot to JPEG before base64-encoding to avoid
+ * Electron IPC 64MB message limit (raw 1080p PNG can be ~100MB).
  */
 
 const { desktopCapturer, screen } = require('electron')
-const { execFileSync, execSync } = require('child_process')
-const os   = require('os')
-const path = require('path')
-const fs   = require('fs')
+const { execFileSync, execSync }  = require('child_process')
+const sharp = require('sharp')
+const os    = require('os')
+const path  = require('path')
+const fs    = require('fs')
 
 // ─── Main-process capture (primary method) ───────────────────────────────────
 async function captureViaMainProcess() {
@@ -28,7 +23,6 @@ async function captureViaMainProcess() {
       thumbnailSize: { width, height },
     })
 
-    // Find primary or first screen
     const src = sources.find(s =>
       s.name.toLowerCase().includes('screen 1') ||
       s.name.toLowerCase().includes('entire') ||
@@ -39,7 +33,12 @@ async function captureViaMainProcess() {
       throw new Error('No screen source available via desktopCapturer')
     }
 
-    return src.thumbnail.toPNG().toString('base64')
+    // Compress to JPEG (quality 92) before IPC transfer.
+    // Raw PNG of a 1080p screen is ~100MB which exceeds Electron's ~64MB IPC limit.
+    // JPEG at quality 92 is ~3-5MB and retains full detail for template matching.
+    const pngBuf    = src.thumbnail.toPNG()
+    const jpegBuf   = await sharp(pngBuf).jpeg({ quality: 92 }).toBuffer()
+    return jpegBuf.toString('base64')
   } catch (err) {
     throw new Error(`Main-process capture failed: ${err.message}`)
   }
@@ -73,7 +72,7 @@ function captureLinux() {
 
 // ─── Windows OS fallback ──────────────────────────────────────────────────────
 function captureWindows() {
-  const tmp = path.join(os.tmpdir(), `dod-${Date.now()}.png`)
+  const tmp     = path.join(os.tmpdir(), `dod-${Date.now()}.png`)
   const escaped = tmp.replace(/\\/g, '\\\\')
   const ps =
     'Add-Type -AssemblyName System.Windows.Forms,System.Drawing; ' +
@@ -90,14 +89,12 @@ function captureWindows() {
 
 // ─── Main entry ───────────────────────────────────────────────────────────────
 async function takeScreenshot() {
-  // Try main process first (works on Windows + Linux X11/XWayland)
   try {
     return await captureViaMainProcess()
   } catch (err) {
     console.warn('[screenshot] main-process capture failed:', err.message, '— trying OS fallback')
   }
 
-  // OS fallbacks
   if (process.platform === 'linux')  return captureLinux()
   if (process.platform === 'win32')  return captureWindows()
 

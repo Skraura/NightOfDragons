@@ -21,6 +21,10 @@ export default function DragonDetail({ dragon, allDragons, onEdit, onDelete }) {
   const isElder  = dragon.is_elder === 1 || dragon.elder_status === 'ELDER'
   const father   = dragon.father_id ? allDragons.find(d => d.id === dragon.father_id) : null
   const mother   = dragon.mother_id ? allDragons.find(d => d.id === dragon.mother_id) : null
+  const mate     = dragon.mate_id   ? allDragons.find(d => d.id === dragon.mate_id)   : null
+  const haremDragons = Array.isArray(dragon.harem)
+    ? dragon.harem.map(id => allDragons.find(d => d.id === id)).filter(Boolean)
+    : []
 
   const species  = SPECIES_CONFIG[dragon.species]
     || SPECIES_CONFIG[Object.keys(SPECIES_CONFIG).find(k => SPECIES_CONFIG[k].code === dragon.species)]
@@ -45,8 +49,13 @@ export default function DragonDetail({ dragon, allDragons, onEdit, onDelete }) {
             {species.icon} {dragon.species}
           </div>
           <h2 className={`cinzel ${styles.name}`}>
-            {dragon.ownerUsername || dragon.player_name || dragon.species}
+            {dragon.name || dragon.ownerUsername || dragon.player_name || dragon.species}
           </h2>
+          {dragon.name && (
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+              {dragon.ownerUsername || dragon.player_name}
+            </div>
+          )}
           <div className={styles.badges}>
             {dragon.gender && (
               <span className={styles.badge} style={{ color: dragon.gender === 'M' ? '#4da6ff' : '#e05a5a' }}>
@@ -54,11 +63,10 @@ export default function DragonDetail({ dragon, allDragons, onEdit, onDelete }) {
               </span>
             )}
             {dragon.growth && <span className={styles.badge}>{dragon.growth}</span>}
-            {dragon.purity && <span className={styles.badge} style={{color:'#a78bfa'}}>{dragon.purity}</span>}
+            {dragon.purity && <span className={styles.badge} style={{color:'#a78bfa'}}>Skin Purity: {dragon.purity}</span>}
             {dragon.clan_role && <span className={styles.badge} style={{opacity:0.7}}>{dragon.clan_role}</span>}
             {isElder && <span className={`${styles.badge} ${styles.elderBadge}`}>⬡ ELDER</span>}
             {dragon.is_hungry && <span className={styles.badge} title="Hungry">🍖 Hungry</span>}
-            {/* Bloodline Quality badge */}
             {dragon.bloodline_quality && (
               <span className={`grade-badge ${getGradeClass(dragon.bloodline_quality)} ${styles.bqBadge}`}>
                 BQ {dragon.bloodline_quality}
@@ -78,7 +86,7 @@ export default function DragonDetail({ dragon, allDragons, onEdit, onDelete }) {
           <div className={styles.skinRow}>
             <SkinCard label="Dominant Skin"  value={dragon.skin_dominant}  color={skinColor} />
             <SkinCard label="Recessive Skin" value={dragon.skin_recessive} color={SKIN_COLORS[dragon.skin_recessive]} />
-            <SkinCard label="Purity"         value={dragon.purity}         color={dragon.purity ? '#a78bfa' : null} />
+            <SkinCard label="Skin Purity"    value={dragon.purity}         color={dragon.purity ? '#a78bfa' : null} />
           </div>
         </Section>
 
@@ -100,8 +108,10 @@ export default function DragonDetail({ dragon, allDragons, onEdit, onDelete }) {
         <Section title="Growth Progression">
           <div className={styles.progressRow}>
             <div className={styles.tickBlock}>
-              <span className={styles.tickValue}>{dragon.ticks != null ? Number(dragon.ticks).toFixed(2) : '—'}</span>
-              <span className={styles.tickLabel}>Ticks</span>
+              <span className={styles.tickValue}>
+                {dragon.ticks != null ? Math.round(dragon.ticks * 100) : '—'}%
+              </span>
+              <span className={styles.tickLabel}>Elder Progress</span>
             </div>
             <TickBar ticks={dragon.ticks} />
             <div className={styles.elderStatus}>
@@ -112,6 +122,52 @@ export default function DragonDetail({ dragon, allDragons, onEdit, onDelete }) {
             </div>
           </div>
         </Section>
+
+        {/* ── Mate & Harem ── */}
+        {(mate || haremDragons.length > 0) && (
+          <Section title="Mate & Harem">
+            {mate && (
+              <div style={{ marginBottom: 10 }}>
+                <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Primary Mate</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, padding: '10px 14px', background: 'var(--surface2)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 20 }}>💕</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>{mate.name || mate.ownerUsername || mate.player_name}</div>
+                    {mate.name && <div style={{ color: 'var(--muted)', fontSize: 11 }}>{mate.ownerUsername || mate.player_name}</div>}
+                    <div style={{ display:'flex', gap:8, marginTop:2 }}>
+                      <span style={{ color: 'var(--accent)', fontSize: 11 }}>{mate.species}</span>
+                      <span style={{ color: mate.gender === 'M' ? '#4da6ff' : '#e05a5a', fontSize: 11, fontWeight:700 }}>
+                        {mate.gender === 'M' ? '♂' : mate.gender === 'F' ? '♀' : '?'}
+                      </span>
+                      {mate.species !== dragon.species && (
+                        <span style={{ fontSize:10, color:'#e05a5a' }}>⚠ different species</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {haremDragons.length > 0 && (
+              <div>
+                <span style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Harem — {haremDragons.length} approved partner{haremDragons.length !== 1 ? 's' : ''}
+                </span>
+                <div style={{ display: 'flex', flexWrap:'wrap', gap: 6, marginTop: 6 }}>
+                  {haremDragons.map(h => (
+                    <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', background: 'var(--surface2)', borderRadius: 8, fontSize: 12, border:'1px solid var(--border)' }}>
+                      <span style={{ color: h.gender === 'M' ? '#4da6ff' : '#e05a5a', fontWeight:700 }}>
+                        {h.gender === 'M' ? '♂' : h.gender === 'F' ? '♀' : '?'}
+                      </span>
+                      <span style={{ fontWeight: 600 }}>{h.name || h.ownerUsername || h.player_name}</span>
+                      {h.name && <span style={{ color: 'var(--muted)', fontSize: 10 }}>{h.ownerUsername || h.player_name}</span>}
+                      <span style={{ color: 'var(--accent)', fontSize:10 }}>{h.species}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Section>
+        )}
 
         {/* ── Lineage (DB links) ── */}
         {(father || mother) && (

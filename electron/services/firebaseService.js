@@ -1,5 +1,5 @@
 /**
- * firebaseService.js — v6.1
+ * firebaseService.js — v7.2
  *
  * Auth model (v6.1):
  *   - Firebase Auth uses EMAIL + PASSWORD (real email, not synthesised)
@@ -10,7 +10,7 @@
  *   - accountId = uid + ':' + slugified-steam-name  (or just uid for the first/default)
  *
  * Firestore layout:
- *   /users/{uid}            → { email, displayName, role, isAdmin, createdAt, accounts: [{id,label},...] }
+ *   /users/{uid}            → { email, displayName, role, createdAt, accounts: [{id,label},...] }
  *   /dragons/{dragonId}     → { user_id: uid, account_id: accountId, ...fields }
  */
 
@@ -44,11 +44,39 @@ async function getFirebase() {
   return { auth: _auth, db: _db }
 }
 
+/**
+ * ensureAuth()
+ * Guarantees a live Firebase auth token before any Firestore write.
+ * If the current user has no token (session expired or missing),
+ * re-signs-in using saved credentials.
+ * Call this at the top of any function that writes to Firestore.
+ */
+async function ensureAuth() {
+  const { auth } = await getFirebase()
+  if (auth.currentUser) {
+    // Force-refresh the ID token so it doesn't expire mid-session
+    try { await auth.currentUser.getIdToken(true) } catch {}
+    return
+  }
+  // No current user — re-authenticate
+  const creds = loadCreds()
+  if (!creds?.email || !creds?.password) throw new Error('No saved credentials — please log in again')
+  const { signInWithEmailAndPassword } = await import('firebase/auth')
+  await signInWithEmailAndPassword(auth, creds.email, creds.password)
+}
+
 // ─── Session persistence ──────────────────────────────────────────────────────
 function getTokenPath() { return path.join(app.getPath('userData'), 'firebase-session.json') }
 function saveSession(data) { fs.writeFileSync(getTokenPath(), JSON.stringify(data, null, 2)) }
 function clearSession()    { try { fs.unlinkSync(getTokenPath()) } catch {} }
 function loadSession()     { try { return JSON.parse(fs.readFileSync(getTokenPath(), 'utf8')) } catch { return null } }
+
+// Credentials are saved separately so we can re-authenticate on next launch.
+// Stored in plain text — acceptable for a local desktop app on a personal machine.
+function getCredPath() { return path.join(app.getPath('userData'), 'firebase-creds.json') }
+function saveCreds(email, password) { try { fs.writeFileSync(getCredPath(), JSON.stringify({ email, password })) } catch {} }
+function loadCreds()   { try { return JSON.parse(fs.readFileSync(getCredPath(), 'utf8')) } catch { return null } }
+function clearCreds()  { try { fs.unlinkSync(getCredPath()) } catch {} }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -61,23 +89,22 @@ async function register(email, password, displayName) {
   const uid  = cred.user.uid
   await updateProfile(cred.user, { displayName: displayName?.trim() || email.split('@')[0] })
 
-  const name    = displayName?.trim() || email.split('@')[0]
-  const isAdmin = ['Skraura', 'Infernik'].includes(name)
+  const name = displayName?.trim() || email.split('@')[0]
+  const role = ['Skraura', 'Infernik'].includes(name) ? 'admin' : 'member'
 
-  // First account = the display name they used at registration
   const defaultAccount = { id: uid, label: name }
 
   await setDoc(doc(db, 'users', uid), {
     email:       email.trim(),
     displayName: name,
-    role:        isAdmin ? 'admin' : 'member',
-    isAdmin,
+    role,
     accounts:    [defaultAccount],
     createdAt:   new Date().toISOString(),
   })
 
-  const user = { id: uid, username: name, email: email.trim(), role: isAdmin ? 'admin' : 'member', isAdmin, accounts: [defaultAccount] }
+  const user = { id: uid, username: name, email: email.trim(), role, accounts: [defaultAccount] }
   saveSession(user)
+  saveCreds(email.trim(), password)
   return { ok: true, user }
 }
 
@@ -97,10 +124,10 @@ async function login(email, password) {
     username: data.displayName || email.split('@')[0],
     email:    data.email || email.trim(),
     role:     data.role  || 'member',
-    isAdmin:  data.isAdmin || data.role === 'admin',
     accounts: data.accounts || [{ id: uid, label: data.displayName || email.split('@')[0] }],
   }
   saveSession(user)
+  saveCreds(email.trim(), password)
   return { ok: true, user }
 }
 
@@ -109,6 +136,7 @@ async function logout() {
   const { signOut } = await import('firebase/auth')
   await signOut(auth)
   clearSession()
+  clearCreds()
   return { ok: true }
 }
 
@@ -120,9 +148,12 @@ async function listUsers() {
 }
 
 async function updateRole(userId, role) {
+  await ensureAuth()
   const { db } = await getFirebase()
   const { doc, updateDoc } = await import('firebase/firestore')
-  await updateDoc(doc(db, 'users', userId), { role, isAdmin: role === 'admin' })
+  const validRoles = ['member', 'admin', 'dev']
+  if (!validRoles.includes(role)) return { ok: false, error: 'Invalid role' }
+  await updateDoc(doc(db, 'users', userId), { role })
   return { ok: true }
 }
 
@@ -139,6 +170,7 @@ async function updatePassword(userId, newPassword) {
 // ── Accounts management (Steam handles) ──────────────────────────────────────
 
 async function addAccount(userId, label) {
+  await ensureAuth()
   const { db } = await getFirebase()
   const { doc, getDoc, updateDoc, arrayUnion } = await import('firebase/firestore')
   const ref  = doc(db, 'users', userId)
@@ -154,6 +186,7 @@ async function addAccount(userId, label) {
 }
 
 async function removeAccount(userId, accountId) {
+  await ensureAuth()
   const { db } = await getFirebase()
   const { doc, getDoc, updateDoc } = await import('firebase/firestore')
   const ref  = doc(db, 'users', userId)
@@ -166,7 +199,30 @@ async function removeAccount(userId, accountId) {
   return { ok: true }
 }
 
-function restoreSession() { return loadSession() }
+async function restoreSession() {
+  const saved = loadSession()
+  if (!saved) return null
+
+  // Re-authenticate with Firebase so request.auth is valid in Firestore rules.
+  // Electron's main process has no IndexedDB/localStorage, so the Firebase SDK
+  // cannot persist its own auth token — we must sign in again on every launch.
+  const creds = loadCreds()
+  if (creds?.email && creds?.password) {
+    try {
+      const { auth } = await getFirebase()
+      const { signInWithEmailAndPassword } = await import('firebase/auth')
+      await signInWithEmailAndPassword(auth, creds.email, creds.password)
+    } catch (err) {
+      // Wrong password or account deleted — force re-login
+      console.warn('[restoreSession] Re-auth failed:', err.message)
+      clearSession()
+      clearCreds()
+      return null
+    }
+  }
+
+  return saved
+}
 function getCloudSettings() { return { ...FIREBASE_CONFIG, enabled: true } }
 
 // ─── Dragons ──────────────────────────────────────────────────────────────────
@@ -188,6 +244,7 @@ async function getDragon(userId, dragonId) {
 }
 
 async function createDragon(userId, data) {
+  await ensureAuth()
   const { db } = await getFirebase()
   const { collection, addDoc, serverTimestamp } = await import('firebase/firestore')
   const ref = await addDoc(collection(db, 'dragons'), {
@@ -200,6 +257,7 @@ async function createDragon(userId, data) {
 }
 
 async function updateDragon(userId, dragonId, data) {
+  await ensureAuth()
   const { db } = await getFirebase()
   const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore')
   await updateDoc(doc(db, 'dragons', dragonId), {
@@ -210,6 +268,7 @@ async function updateDragon(userId, dragonId, data) {
 }
 
 async function deleteDragon(userId, dragonId) {
+  await ensureAuth()
   const { db } = await getFirebase()
   const { doc, deleteDoc } = await import('firebase/firestore')
   await deleteDoc(doc(db, 'dragons', dragonId))
@@ -266,6 +325,7 @@ async function getNestingSpots() {
 }
 
 async function saveNestingSpot(spot) {
+  await ensureAuth()
   const { db } = await getFirebase()
   const { collection, addDoc, doc, updateDoc, serverTimestamp } = await import('firebase/firestore')
   if (spot.id) {
@@ -283,6 +343,7 @@ async function saveNestingSpot(spot) {
 }
 
 async function deleteNestingSpot(spotId) {
+  await ensureAuth()
   const { db } = await getFirebase()
   const { doc, deleteDoc } = await import('firebase/firestore')
   await deleteDoc(doc(db, 'nestingSpots', spotId))
@@ -308,11 +369,188 @@ async function importDragons(userId, jsonStr) {
   return { ok: true, imported: count }
 }
 
+async function setMate(dragonId, newMateId, allOwnerIds) {
+  await ensureAuth()
+  const { db } = await getFirebase()
+  const { doc, getDoc, updateDoc, serverTimestamp } = await import('firebase/firestore')
+
+  const dragonRef = doc(db, 'dragons', dragonId)
+  const dragonSnap = await getDoc(dragonRef)
+  if (!dragonSnap.exists()) return { ok: false, error: 'Dragon not found' }
+
+  const oldMateId = dragonSnap.data().mate_id || null
+
+  // Clear old mate's link
+  if (oldMateId && oldMateId !== newMateId) {
+    try {
+      await updateDoc(doc(db, 'dragons', oldMateId), { mate_id: null, updated_at: serverTimestamp() })
+    } catch {} // ignore if we can't update (permission or missing)
+  }
+
+  // Set this dragon's mate
+  await updateDoc(dragonRef, { mate_id: newMateId || null, updated_at: serverTimestamp() })
+
+  // Set new mate's link back
+  if (newMateId) {
+    try {
+      const newMateSnap = await getDoc(doc(db, 'dragons', newMateId))
+      if (newMateSnap.exists()) {
+        const newMateOldMateId = newMateSnap.data().mate_id || null
+        // Clear new mate's old partner first
+        if (newMateOldMateId && newMateOldMateId !== dragonId) {
+          try { await updateDoc(doc(db, 'dragons', newMateOldMateId), { mate_id: null, updated_at: serverTimestamp() }) } catch {}
+        }
+        await updateDoc(doc(db, 'dragons', newMateId), { mate_id: dragonId, updated_at: serverTimestamp() })
+      }
+    } catch {}
+  }
+
+  return { ok: true }
+}
+
+// ─── Feedback ─────────────────────────────────────────────────────────────────
+
+async function getFeedback({ userId, role, visibility } = {}) {
+  const { db } = await getFirebase()
+  const { collection, getDocs, query, orderBy, where } = await import('firebase/firestore')
+  const isPrivileged = role === 'admin' || role === 'dev'
+  // Members see: global + their own private. Devs/admins see all.
+  const q = isPrivileged
+    ? query(collection(db, 'feedback'), orderBy('created_at', 'desc'))
+    : query(collection(db, 'feedback'), where('visibility', '==', 'global'), orderBy('created_at', 'desc'))
+  const snap = await getDocs(q)
+  const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  // Also include own private posts for members
+  if (!isPrivileged && userId) {
+    const qPriv = query(collection(db, 'feedback'),
+      where('visibility', '==', 'private'),
+      where('author_id', '==', userId),
+      orderBy('created_at', 'desc'))
+    const privSnap = await getDocs(qPriv)
+    privSnap.docs.forEach(d => {
+      if (!all.find(f => f.id === d.id)) all.push({ id: d.id, ...d.data() })
+    })
+  }
+  return all.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0))
+}
+
+async function createFeedback(data) {
+  await ensureAuth()
+  const { db } = await getFirebase()
+  const { collection, addDoc, serverTimestamp } = await import('firebase/firestore')
+  const ref = await addDoc(collection(db, 'feedback'), {
+    type:        data.type       || 'other',
+    title:       data.title      || '',
+    body:        data.body       || '',
+    subtasks:    data.subtasks   || [],
+    dragon_id:   data.dragon_id  || null,
+    visibility:  data.visibility || 'global',
+    author_id:   data.author_id,
+    upvotes:     [],
+    downvotes:   [],
+    replies:     [],
+    resolved:    false,
+    created_at:  serverTimestamp(),
+    updated_at:  serverTimestamp(),
+  })
+  return { ok: true, id: ref.id }
+}
+
+async function updateFeedback(id, data, userId, role) {
+  await ensureAuth()
+  const { db } = await getFirebase()
+  const { doc, getDoc, updateDoc, serverTimestamp } = await import('firebase/firestore')
+  const ref  = doc(db, 'feedback', id)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return { ok: false, error: 'Not found' }
+  const existing = snap.data()
+  const isPrivileged = role === 'admin' || role === 'dev'
+  if (!isPrivileged && existing.author_id !== userId) return { ok: false, error: 'Not authorized' }
+  await updateDoc(ref, { ...data, updated_at: serverTimestamp() })
+  return { ok: true }
+}
+
+async function deleteFeedback(id, userId, role) {
+  await ensureAuth()
+  const { db } = await getFirebase()
+  const { doc, getDoc, deleteDoc } = await import('firebase/firestore')
+  const ref  = doc(db, 'feedback', id)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return { ok: false, error: 'Not found' }
+  const isPrivileged = role === 'admin' || role === 'dev'
+  if (!isPrivileged && snap.data().author_id !== userId) return { ok: false, error: 'Not authorized' }
+  await deleteDoc(ref)
+  return { ok: true }
+}
+
+async function voteFeedback(id, userId, direction) {
+  await ensureAuth()
+  const { db } = await getFirebase()
+  const { doc, getDoc, updateDoc } = await import('firebase/firestore')
+  const ref  = doc(db, 'feedback', id)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return { ok: false }
+  let { upvotes = [], downvotes = [] } = snap.data()
+  if (direction === 'up') {
+    upvotes   = upvotes.includes(userId)   ? upvotes.filter(u => u !== userId)   : [...upvotes.filter(u => u !== userId), userId]
+    downvotes = downvotes.filter(u => u !== userId)
+  } else {
+    downvotes = downvotes.includes(userId) ? downvotes.filter(u => u !== userId) : [...downvotes.filter(u => u !== userId), userId]
+    upvotes   = upvotes.filter(u => u !== userId)
+  }
+  await updateDoc(ref, { upvotes, downvotes })
+  return { ok: true, upvotes, downvotes }
+}
+
+async function addReply(feedbackId, { body, author_id }) {
+  await ensureAuth()
+  const { db } = await getFirebase()
+  const { doc, getDoc, updateDoc, serverTimestamp } = await import('firebase/firestore')
+  const ref  = doc(db, 'feedback', feedbackId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return { ok: false }
+  const replies = snap.data().replies || []
+  replies.push({ body, author_id, created_at: new Date().toISOString() })
+  await updateDoc(ref, { replies, updated_at: serverTimestamp() })
+  return { ok: true }
+}
+
+async function markFeedbackDone(id, resolvedBy) {
+  await ensureAuth()
+  const { db } = await getFirebase()
+  const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore')
+  await updateDoc(doc(db, 'feedback', id), {
+    resolved: true, resolved_by: resolvedBy, resolved_at: serverTimestamp(), updated_at: serverTimestamp()
+  })
+  return { ok: true }
+}
+
+async function publishVersionNote({ version, body, author_id }) {
+  await ensureAuth()
+  const { db } = await getFirebase()
+  const { collection, addDoc, serverTimestamp } = await import('firebase/firestore')
+  const ref = await addDoc(collection(db, 'versionNotes'), {
+    version, body, author_id, published_at: serverTimestamp()
+  })
+  return { ok: true, id: ref.id }
+}
+
+async function getVersionNotes() {
+  const { db } = await getFirebase()
+  const { collection, getDocs, query, orderBy } = await import('firebase/firestore')
+  const snap = await getDocs(query(collection(db, 'versionNotes'), orderBy('published_at', 'desc')))
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
 module.exports = {
   register, login, logout, listUsers, updateRole, updatePassword,
   addAccount, removeAccount,
   restoreSession, getCloudSettings,
   getAllDragons, getDragon, createDragon, updateDragon, deleteDragon, getAllDragonsClan,
+  setMate,
   getNestingSpots, saveNestingSpot, deleteNestingSpot,
   exportUser, importDragons,
+  getFeedback, createFeedback, updateFeedback, deleteFeedback,
+  voteFeedback, addReply, markFeedbackDone,
+  publishVersionNote, getVersionNotes,
 }

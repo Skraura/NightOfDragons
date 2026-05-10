@@ -1,3 +1,4 @@
+import { isAdmin } from '../lib/roleUtils'
 /**
  * AccountDashboard.jsx — v7.0
  *
@@ -156,7 +157,7 @@ function VertBarChart({ data, color = 'var(--accent)', height = 80, title }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function AccountDashboard({ dragons, clanDragons, allUsers, mode, onModeChange }) {
   const { user } = useApp()
-  const isAdmin = !!user?.isAdmin
+  const userIsAdmin = isAdmin(user)
 
   // Build the working dataset
   const workingDragons = mode === 'clan' ? clanDragons : dragons
@@ -251,7 +252,7 @@ export default function AccountDashboard({ dragons, clanDragons, allUsers, mode,
   }, [mode, workingDragons, accountRows, allUsers])
 
   // Dragons per species per user (for admin)
-  const perUserSpecies = isAdmin
+  const perUserSpecies = userIsAdmin
     ? (() => {
         const byUser = {}
         workingDragons.forEach(d => {
@@ -286,7 +287,7 @@ export default function AccountDashboard({ dragons, clanDragons, allUsers, mode,
           <h2 className={`cinzel ${styles.title}`}>Account Dashboard</h2>
           <p className={styles.sub}>{alive.length} active · {dead.length} dead · {accountRows.length} account{accountRows.length !== 1 ? 's' : ''}</p>
         </div>
-        {isAdmin && (
+        {userIsAdmin && (
           <div className={styles.modeToggle}>
             <button
               className={`btn btn-sm ${mode === 'mine' ? 'btn-primary' : 'btn-ghost'}`}
@@ -490,7 +491,7 @@ export default function AccountDashboard({ dragons, clanDragons, allUsers, mode,
       </div>
 
       {/* ── Admin only: per-user species breakdown ── */}
-      {isAdmin && mode === 'clan' && perUserSpecies && (
+      {userIsAdmin && mode === 'clan' && perUserSpecies && (
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>Species per Member</h3>
           <div className={styles.tableWrap}>

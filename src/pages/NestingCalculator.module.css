@@ -353,3 +353,230 @@
   border-radius: 4px;
   transition: width 0.4s ease;
 }
+
+/* ── Beta1.0: Popup hint ── */
+.popupHint {
+  font-size: 11px;
+  color: var(--accent);
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: var(--accent-glow);
+  border-radius: var(--r-md);
+  border: 1px solid var(--accent-dim);
+}
+
+/* ── Beta1.0: Mate selection popup ── */
+.popupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.popupBox {
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--r-xl);
+  width: 540px;
+  max-width: 96vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+
+.popupHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid var(--bg-border);
+  gap: 12px;
+}
+
+.popupTitle {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.popupSub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.popupClose {
+  background: transparent;
+  border: 1px solid var(--bg-border);
+  border-radius: var(--r-md);
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.13s;
+}
+.popupClose:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.popupSearch {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--bg-border);
+}
+
+.popupSearchInput {
+  width: 100%;
+  background: var(--bg-raised);
+  border: 1px solid var(--bg-border);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+}
+.popupSearchInput:focus { border-color: var(--accent-dim); }
+
+.popupList {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.popupEmpty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 32px 16px;
+  line-height: 1.5;
+}
+
+.popupItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s;
+  width: 100%;
+}
+.popupItem:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-dim);
+}
+
+.popupItemGender {
+  font-size: 15px;
+  width: 20px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.popupItemName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.popupItemSpecies {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.popupItemRole {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(171,71,188,0.15);
+  color: #ce93d8;
+  border: 1px solid rgba(171,71,188,0.3);
+}
+
+.popupItemBQ {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(201,147,42,0.12);
+  color: #c9932a;
+  border: 1px solid rgba(201,147,42,0.25);
+}
+
+/* ── Beta1.0: Breeder Pairings section (Admin/Dev only) ── */
+.breederSection {
+  background: rgba(171,71,188,0.06);
+  border: 1px solid rgba(171,71,188,0.25);
+  border-radius: var(--r-xl);
+  padding: 14px 18px;
+}
+
+.breederHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.breederTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #ce93d8;
+}
+
+.breederSub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.breederList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.breederPair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(171,71,188,0.3);
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  transition: all 0.13s;
+  font-size: 13px;
+}
+.breederPair:hover {
+  background: rgba(171,71,188,0.12);
+  border-color: rgba(171,71,188,0.55);
+}
+
+.breederFemale { color: #f48fb1; font-weight: 500; }
+.breederX { color: var(--text-muted); font-size: 11px; }
+.breederMale { color: #90caf9; font-weight: 500; }
+.breederSpecies {
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 1px 7px;
+  background: var(--bg-raised);
+  border-radius: 99px;
+  margin-left: 2px;
+}

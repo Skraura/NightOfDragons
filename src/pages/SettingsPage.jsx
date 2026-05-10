@@ -3,6 +3,7 @@ import { useApp } from '../App'
 import { useToast } from '../components/ToastProvider'
 import { CAPTURE_FIELDS } from '../lib/dragonData'
 import useLineagePrefs from '../hooks/useLineagePrefs'
+import { isAdmin, isDev } from '../lib/roleUtils'
 import styles from './SettingsPage.module.css'
 
 export default function SettingsPage({ userId, user: userProp }) {
@@ -240,13 +241,13 @@ export default function SettingsPage({ userId, user: userProp }) {
           </p>
         </section>
 
-        {/* ── Calibration card ── */}
-        <section className={styles.card}>
+        {/* ── Calibration card — Dev only ── */}
+        {isDev(user) && <section className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
               <h3 className={`cinzel ${styles.cardTitle}`}>Box Calibration</h3>
               <p className={styles.cardDesc}>
-                Draw boxes over each data field in your game UI. Only needed once per screen resolution.
+                Draw boxes over each data field in your game UI. Positions are saved as percentages — no re-calibration needed when changing resolution.
               </p>
             </div>
             <div className={styles.progressBadge}>
@@ -302,10 +303,10 @@ export default function SettingsPage({ userId, user: userProp }) {
               <li>Open Day of Dragons and navigate to a dragon's stat screen</li>
               <li>Click "Start Calibration" — a transparent overlay appears over your screen</li>
               <li>For each field in the list, click and drag a box around it</li>
-              <li>Click "Save Layout" — your setup is remembered for <strong>{resolution || 'this resolution'}</strong></li>
+              <li>Click "Save Layout" — boxes are stored as % ratios and work on <strong>any resolution</strong></li>
             </ol>
           </div>
-        </section>
+        </section>}
 
         {/* ── Capture Hotkey ── */}
         <section className={styles.card}>
@@ -348,7 +349,7 @@ export default function SettingsPage({ userId, user: userProp }) {
             review and correct the results before saving.
           </p>
           <div className={styles.requireList}>
-            <Req ok={progress > 0} label={`Box calibration done (${progress}/${totalFields} fields)`} />
+            {isDev(user) && <Req ok={progress > 0} label={`Box calibration done (${progress}/${totalFields} fields)`} />}
             <Req ok={true}         label={`OCR engine: ${highAccuracy && savedKey ? 'Claude Vision (paid)' : 'Tesseract (free)'}`} />
             {highAccuracy && <Req ok={!!savedKey} label="API key configured" />}
             <Req ok={true} label={`Capture key: ${captureKey}`} />
@@ -410,6 +411,9 @@ export default function SettingsPage({ userId, user: userProp }) {
 
         {/* ── Steam Accounts (in-game handles) ── */}
         <SteamAccountsCard userId={userId} user={user} addToast={addToast} />
+
+        {/* ── Clan User Management (admin/dev only) ── */}
+        {isAdmin(user) && <ClanUsersCard user={user} addToast={addToast} />}
 
       </div>
     </div>
@@ -545,5 +549,97 @@ function LineagePrefRow({ label, desc, checked, onChange, locked = false }) {
         <span className={styles.slider} />
       </label>
     </div>
+  )
+}
+
+// ── Clan User Management ──────────────────────────────────────────────────────
+function ClanUsersCard({ user, addToast }) {
+  const [users,    setUsers]    = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [updating, setUpdating] = useState(null) // userId being updated
+
+  useEffect(() => {
+    window.api?.auth.listUsers?.()
+      .then(u => setUsers(Array.isArray(u) ? u : []))
+      .catch(() => setUsers([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleRoleChange(targetUserId, newRole) {
+    setUpdating(targetUserId)
+    try {
+      const res = await window.api.auth.updateRole({ userId: targetUserId, role: newRole })
+      if (res?.ok) {
+        setUsers(prev => prev.map(u => u.id === targetUserId ? { ...u, role: newRole } : u))
+        addToast(`Role updated to "${newRole}"`, 'success')
+      } else {
+        addToast(res?.error || 'Failed to update role', 'error')
+      }
+    } catch (e) {
+      addToast(e.message, 'error')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const ROLE_OPTIONS = [
+    { value: 'member', label: '🐉 Member',       color: 'var(--text)' },
+    { value: 'admin',  label: '★ Admin',          color: '#c9932a' },
+    { value: 'dev',    label: '⚙ Developer',      color: '#5291f5' },
+  ]
+
+  return (
+    <section style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:'20px 22px' }}>
+      <h3 style={{ margin:'0 0 4px', fontSize:14, fontWeight:700 }}>👥 Clan Members</h3>
+      <p style={{ margin:'0 0 16px', fontSize:12, color:'var(--muted)' }}>
+        Manage roles for all registered clan members. Devs have all admin privileges plus dev tools.
+      </p>
+
+      {loading && <p style={{ color:'var(--muted)', fontSize:13 }}>Loading members…</p>}
+
+      {!loading && users.map(u => {
+        const isMe = u.id === user.id
+        const currentRole = u.role || 'member'
+        return (
+          <div key={u.id} style={{
+            display:'flex', alignItems:'center', gap:12,
+            padding:'10px 0', borderBottom:'1px solid var(--border)',
+          }}>
+            <div style={{
+              width:34, height:34, borderRadius:'50%',
+              background:'var(--surface2)', display:'flex', alignItems:'center',
+              justifyContent:'center', fontWeight:700, fontSize:14, flexShrink:0,
+              color: currentRole === 'dev' ? '#5291f5' : currentRole === 'admin' ? '#c9932a' : 'var(--muted)',
+            }}>
+              {(u.displayName || u.username || u.email || '?')[0].toUpperCase()}
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontWeight:600, fontSize:13 }}>
+                {u.displayName || u.username || u.email}
+                {isMe && <span style={{ fontSize:10, color:'var(--muted)', marginLeft:6 }}>(you)</span>}
+              </div>
+              <div style={{ fontSize:11, color:'var(--muted)' }}>{u.email}</div>
+            </div>
+            <select
+              value={currentRole}
+              disabled={isMe || updating === u.id}
+              onChange={e => handleRoleChange(u.id, e.target.value)}
+              style={{
+                fontSize:12, padding:'4px 8px', borderRadius:6,
+                border:'1px solid var(--border)', background:'var(--surface2)',
+                color: currentRole === 'dev' ? '#5291f5' : currentRole === 'admin' ? '#c9932a' : 'var(--text)',
+                opacity: isMe ? 0.5 : 1,
+                cursor: isMe ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {ROLE_OPTIONS.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+            {updating === u.id && <span style={{ fontSize:11, color:'var(--muted)' }}>…</span>}
+          </div>
+        )
+      })}
+    </section>
   )
 }

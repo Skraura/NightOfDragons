@@ -1,3 +1,4 @@
+import { isAdmin, isDev } from '../lib/roleUtils'
 import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '../App'
 import TitleBar from '../components/TitleBar'
@@ -6,14 +7,16 @@ import DragonDetail from '../components/DragonDetail'
 import DragonForm from '../components/DragonForm'
 import CaptureConfirmModal from '../components/CaptureConfirmModal'
 import Sidebar from '../components/Sidebar'
-import LineageTree from '../components/LineageTree'
-import ClanLineageCanvas from '../components/ClanLineageCanvas'
+import LineageGraph from '../components/LineageGraph'
+// ClanLineageCanvas replaced by LineageGraph in v8.1.0
 import SettingsPage from './SettingsPage'
 import NestingCalculator from './NestingCalculator'
 import ElderTracker from './ElderTracker'
 import TrainingPage from './TrainingPage'
 import MapPage from './MapPage'
 import AccountDashboard from './AccountDashboard'
+import FeedbackPage from './FeedbackPage'
+import DevConsolePage from './DevConsolePage'
 import styles from './DashboardPage.module.css'
 import { MAP_LOCATIONS } from '../lib/dragonData'
 
@@ -57,7 +60,7 @@ export default function DashboardPage({ onLogout }) {
 
   // ── Load clan dragons (for lineage parent dropdowns + map) + users list ──
   useEffect(() => {
-    if (user.isAdmin) {
+    if (isAdmin(user)) {
       window.api.dragon.getAllClan?.()
         .then(res => { if (res?.ok) setClanDragons(res.dragons || []) })
         .catch(() => {})
@@ -68,10 +71,10 @@ export default function DashboardPage({ onLogout }) {
         .then(spots => setNestingSpots(spots || []))
         .catch(() => {})
     }
-  }, [user.isAdmin])
+  }, [isAdmin(user)])
 
   // Dragons to show in registry (own or all clan for admins)
-  const registryDragons = (user.isAdmin && registryMode === 'clan') ? clanDragons : dragons
+  const registryDragons = (isAdmin(user) && registryMode === 'clan') ? clanDragons : dragons
 
   const filtered = registryDragons.filter(d => {
     // Dead filter
@@ -116,7 +119,7 @@ export default function DashboardPage({ onLogout }) {
       const targetUserId = dragon.user_id || user.id
       await window.api.dragon.update({ userId: targetUserId, id: dragon.id, data: { is_hungry: newVal } })
       // Refresh whichever list is active
-      if (registryMode === 'clan' && user.isAdmin) {
+      if (registryMode === 'clan' && isAdmin(user)) {
         const res = await window.api.dragon.getAllClan?.()
         if (res?.ok) setClanDragons(res.dragons || [])
       } else {
@@ -139,36 +142,68 @@ export default function DashboardPage({ onLogout }) {
     }
   }
 
+  const [killConfirm, setKillConfirm] = useState(null) // { duplicate, pendingData }
+
   async function handleSave(data) {
     try {
-      if (editDragon) {
-        await window.api.dragon.update({ userId: user.id, id: editDragon.id, data })
-        addToast('Dragon updated', 'success')
-      } else {
-        await window.api.dragon.create({ userId: user.id, data })
-        addToast('Dragon added', 'success')
+      // ── Duplicate prevention: 1 dragon per species per account ──
+      if (!editDragon) {
+        const duplicate = dragons.find(d =>
+          d.species === data.species &&
+          d.account_id === data.account_id &&
+          !d.is_dead
+        )
+        if (duplicate) {
+          // Show in-app confirmation instead of toast error
+          setKillConfirm({ duplicate, pendingData: data })
+          return
+        }
       }
-      // If admin saved a nesting spot via the form, persist it
-      if (user.isAdmin && data.location?.isNest && data.location?.spotName?.trim()) {
-        try {
-          await window.api.nestingSpot.save({
-            name: data.location.spotName.trim(),
-            x: data.location.x,
-            y: data.location.y,
-          })
-          const spots = await window.api.nestingSpot.getAll()
-          setNestingSpots(spots || [])
-          addToast(`🥚 Nesting spot "${data.location.spotName.trim()}" shared`, 'success')
-        } catch {}
-      }
-      setShowForm(false)
-      setEditDragon(null)
-      loadDragons()
+
+      await doSave(data)
     } catch (err) {
       addToast(err.message || 'Save failed', 'error')
     }
   }
 
+  async function handleKillAndCreate() {
+    if (!killConfirm) return
+    const { duplicate, pendingData } = killConfirm
+    setKillConfirm(null)
+    try {
+      // Mark the duplicate as dead
+      await window.api.dragon.kill({ userId: user.id, id: duplicate.id })
+      addToast(`${duplicate.name || duplicate.species} marked as dead`, 'info')
+      // Now create the new dragon
+      await doSave(pendingData)
+    } catch (err) {
+      addToast(err.message || 'Failed', 'error')
+    }
+  }
+
+  async function doSave(data) {
+    try {
+      if (editDragon) {
+        await window.api.dragon.update({ userId: user.id, id: editDragon.id, data })
+        if (data.mate_id !== editDragon.mate_id) {
+          await window.api.dragon.setMate({ dragonId: editDragon.id, mateId: data.mate_id || null })
+        }
+        addToast('Dragon updated', 'success')
+      } else {
+        const res = await window.api.dragon.create({ userId: user.id, data })
+        if (data.mate_id && res?.id) {
+          await window.api.dragon.setMate({ dragonId: res.id, mateId: data.mate_id })
+        }
+        addToast('Dragon added', 'success')
+      }
+      setShowForm(false)
+      setEditDragon(null)
+      await loadDragons()
+      window.dispatchEvent(new CustomEvent('dragon:refresh'))
+    } catch (err) {
+      addToast(err.message || 'Save failed', 'error')
+    }
+  }
   async function handleLocationSave(dragon, location) {
     setLocationTarget(null)
     try {
@@ -226,9 +261,17 @@ export default function DashboardPage({ onLogout }) {
           />
         )}
         {view === 'settings'    && <SettingsPage userId={user.id} user={user} />}
+
+        {/* Feedback — accessible to ALL members */}
+        {view === 'feedback' && (
+          <div className={styles.main}>
+            <FeedbackPage dragons={dragons} />
+          </div>
+        )}
+
         {view === 'nesting'     && <NestingCalculator dragons={dragons} />}
         {view === 'elder'       && <ElderTracker dragons={dragons} />}
-        {view === 'training'    && <TrainingPage />}
+        {/* Training page lives inside DevConsolePage → dev-training nav */}
         {view === 'map'         && (
           <div className={styles.main}>
             <MapPage
@@ -238,12 +281,12 @@ export default function DashboardPage({ onLogout }) {
             />
           </div>
         )}
-        {view === 'clan-canvas' && user.isAdmin && (
-          <div className={styles.main}>
-            <ClanLineageCanvas />
+        {view === 'clan-canvas' && isAdmin(user) && (
+          <div className={styles.main} style={{ padding:0 }}>
+            <LineageGraph dragons={clanDragons} clanDragons={[]} user={user} />
           </div>
         )}
-        {view === 'clan-map' && user.isAdmin && (
+        {view === 'clan-map' && isAdmin(user) && (
           <div className={styles.main}>
             <MapPage
               myDragons={[]}
@@ -253,9 +296,19 @@ export default function DashboardPage({ onLogout }) {
             />
           </div>
         )}
-        {view === 'lineage' && (
+
+        {/* Dev console — feedback + simulations + training */}
+        {(view === 'dev-feedback' || view === 'dev-simulation' || view === 'dev-training') && isDev(user) && (
           <div className={styles.main}>
-            <LineageTree dragons={dragons} />
+            <DevConsolePage initialTab={view === 'dev-simulation' ? 'simulation' : view === 'dev-training' ? 'training' : 'feedback'} />
+          </div>
+        )}
+
+
+
+        {view === 'lineage' && (
+          <div className={styles.main} style={{ padding:0 }}>
+            <LineageGraph dragons={dragons} clanDragons={clanDragons} user={user} />
           </div>
         )}
 
@@ -266,12 +319,12 @@ export default function DashboardPage({ onLogout }) {
               <div className={styles.topLeft}>
                 <h2 className={`cinzel ${styles.pageTitle}`}>
                   Dragon Registry
-                  {user.isAdmin && registryMode === 'clan' && <span style={{ fontSize: 13, color: 'var(--accent)', marginLeft: 8 }}>★ All Members</span>}
+                  {isAdmin(user) && registryMode === 'clan' && <span style={{ fontSize: 13, color: 'var(--accent)', marginLeft: 8 }}>★ All Members</span>}
                 </h2>
                 <span className={styles.count}>{filtered.length} / {registryDragons.length}</span>
               </div>
               <div className={styles.topRight}>
-                {user.isAdmin && (
+                {isAdmin(user) && (
                   <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
                     <button
                       className={`btn btn-sm ${registryMode === 'mine' ? 'btn-primary' : 'btn-ghost'}`}
@@ -319,7 +372,7 @@ export default function DashboardPage({ onLogout }) {
                     <option value="">Show all</option>
                     <option value="only">Dead only</option>
                   </select>
-                  {user.isAdmin && registryMode === 'clan' && allUsers.length > 0 && (
+                  {isAdmin(user) && registryMode === 'clan' && allUsers.length > 0 && (
                     <select value={filterUser} onChange={e => setFilterUser(e.target.value)}>
                       <option value="">All members</option>
                       {allUsers.map(u => (
@@ -382,6 +435,32 @@ export default function DashboardPage({ onLogout }) {
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditDragon(null) }}
         />
+      )}
+
+      {/* ── Kill-and-replace confirmation modal ── */}
+      {killConfirm && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center' }}
+             onClick={() => setKillConfirm(null)}>
+          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:'28px 32px', maxWidth:420, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,0.6)' }}
+               onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:28, textAlign:'center', marginBottom:12 }}>💀</div>
+            <h3 style={{ margin:'0 0 8px', textAlign:'center', fontSize:16 }}>Set as Dead?</h3>
+            <p style={{ margin:'0 0 20px', color:'var(--muted)', fontSize:13, textAlign:'center', lineHeight:1.6 }}>
+              This action will set{' '}
+              <b style={{ color:'var(--text)' }}>
+                {killConfirm.duplicate.name || killConfirm.duplicate.species}
+              </b>{' '}
+              (Account: <b style={{ color:'var(--text)' }}>{killConfirm.duplicate.ownerUsername || killConfirm.duplicate.player_name}</b>)
+              {' '}as <b style={{ color:'#e05a5a' }}>Dead</b>, then register the new dragon.
+            </p>
+            <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
+              <button className="btn btn-ghost" onClick={() => setKillConfirm(null)}>Cancel</button>
+              <button className="btn btn-primary" style={{ background:'#c44a4a', borderColor:'#c44a4a' }} onClick={handleKillAndCreate}>
+                Yes, set as dead & proceed
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Location picker (from context menu) ── */}

@@ -1,0 +1,299 @@
+/* LineageGraph.module.css — v10.0 (v8.3.0) */
+
+/* ── Page layout ── */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #0b0b0d;
+  color: #e6eef6;
+  font-family: Inter, system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #071021;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 14px;
+  font-weight: 700;
+  color: #dbeafe;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+.speciesTabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.speciesTab {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  color: rgba(230,238,246,0.55);
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.14s;
+}
+.speciesTab:hover { background: rgba(255,255,255,0.08); color: #e6eef6; }
+
+.speciesTabActive {
+  background: rgba(255,122,182,0.12) !important;
+  border-color: rgba(255,122,182,0.45) !important;
+  color: #ff7ab6 !important;
+}
+
+.speciesCount {
+  font-size: 10px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 0 5px;
+  color: rgba(230,238,246,0.4);
+}
+
+.toolBtn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  color: rgba(230,238,246,0.6);
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.13s;
+}
+.toolBtn:hover { background: rgba(255,255,255,0.09); color: #e6eef6; }
+
+.toolBtnPause { color: rgba(255,213,74,0.8); border-color: rgba(255,213,74,0.2); }
+.toolBtnPlay  { color: rgba(122,209,255,0.8); border-color: rgba(122,209,255,0.2); }
+
+/* ── Main area ── */
+.main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Graph SVG wrapper ── */
+.graphWrap {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.emptyState {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: rgba(230,238,246,0.2);
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ── Right info panel ── */
+.panel {
+  width: 280px;
+  flex-shrink: 0;
+  background: rgba(10,12,20,0.98);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+  z-index: 5;
+}
+
+.panelClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: rgba(230,238,246,0.3);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.12s;
+  z-index: 1;
+}
+.panelClose:hover { color: #e6eef6; }
+
+.panelHeader {
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.panelGender {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.panelName {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e6eef6;
+  line-height: 1.2;
+}
+
+.panelOwner {
+  font-size: 11px;
+  color: rgba(159,183,217,0.6);
+  margin-top: 2px;
+}
+
+.panelMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 11px;
+  color: rgba(230,238,246,0.55);
+}
+
+.elderBadge {
+  background: rgba(255,215,0,0.15);
+  border: 1px solid rgba(255,215,0,0.4);
+  color: #ffd700;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.deadBadge {
+  background: rgba(220,53,69,0.15);
+  border: 1px solid rgba(220,53,69,0.4);
+  color: #ff6b7a;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.gradeBadge {
+  margin-left: auto;
+  background: rgba(255,215,0,0.18);
+  color: #ffd700;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 6px;
+  padding: 3px 8px;
+  flex-shrink: 0;
+}
+
+.panelBody {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panelRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(230,238,246,0.8);
+}
+
+.panelLabel {
+  font-size: 10px;
+  color: rgba(159,183,217,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 64px;
+}
+
+.panelNodeType {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  font-size: 10px;
+  color: rgba(159,183,217,0.3);
+}
+.panelNodeType b { color: rgba(159,183,217,0.55); }
+.panelNodeType code { font-size: 9px; color: rgba(122,209,255,0.4); }
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 16px;
+  background: rgba(7,11,20,0.9);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(159,183,217,0.65);
+  white-space: nowrap;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendLine {
+  width: 20px;
+  height: 2px;
+  border-radius: 1px;
+  flex-shrink: 0;
+  display: inline-block;
+}

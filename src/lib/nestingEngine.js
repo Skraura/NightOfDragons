@@ -220,8 +220,9 @@ export const ELDER_DATA = {
     ticksPerDay: 4,
     daysToElder: 46,
     mutationPoints: [
-      { ticks: 38, pct: null, days: null },
-      { ticks: 57, pct: null, days: null },
+      { ticks: 46,  pct: 0.256, days: 12 },
+      { ticks: 91,  pct: 0.506, days: 23 },
+      { ticks: 136, pct: 0.755, days: 34 },
     ],
   },
   BIO: {

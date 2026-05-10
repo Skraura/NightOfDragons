@@ -1,12 +1,17 @@
 /**
- * localStore.js — v5.3
+ * localStore.js — Beta1.1
  *
  * Handles all LOCAL-ONLY persistence (never synced to Firebase):
- *   - Box calibration configs
+ *   - Box calibration configs (stored as PERCENTAGE-BASED ratios 0.0–1.0)
  *   - App settings (theme, API key, lineage prefs)
  *   - Crop / capture history
+ *   - Dev-authored "bundled" calibration (written next to the executable,
+ *     so it ships to users when the Dev builds a new release)
  *
- * Storage: JSON files in Electron's userData directory.
+ * Coordinate format (stored): { xPct, yPct, wPct, hPct } — all 0.0–1.0
+ * Coordinate format (legacy / runtime): { x, y, w, h } — absolute pixels
+ *
+ * Helper functions toPixels() / toPct() convert between the two.
  */
 
 const { app } = require('electron')
@@ -27,74 +32,158 @@ function writeJSON(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2))
 }
 
-// ─── Default box calibration for 1920×1080 fullscreen ────────────────────────
-// Coordinates are relative to the screenshot pixel space.
-// These defaults target the typical DoD UI layout at 1080p fullscreen.
-// Users with different resolutions or windowed mode should recalibrate.
-const DEFAULT_BOX_CONFIGS = {
-  '1920x1080': {
-    species:              { x: 90,   y: 38,  w: 160, h: 28 },
-    gender:               { x: 260,  y: 38,  w: 40,  h: 28 },
-    skin_dominant:        { x: 90,   y: 70,  w: 240, h: 26 },
-    skin_recessive:       { x: 90,   y: 100, w: 240, h: 26 },
-    growth:               { x: 90,   y: 130, w: 160, h: 26 },
-    ticks:                { x: 90,   y: 160, w: 80,  h: 26 },
-    elder_status:         { x: 180,  y: 160, w: 80,  h: 26 },
-    bloodline_quality:    { x: 90,   y: 190, w: 120, h: 26 },
-    // Stats — right panel, stacked
-    stat_life_expectancy:    { x: 1480, y: 80,  w: 80, h: 22 },
-    stat_scale_thickness:    { x: 1480, y: 110, w: 80, h: 22 },
-    stat_stamina:            { x: 1480, y: 140, w: 80, h: 22 },
-    stat_agility:            { x: 1480, y: 170, w: 80, h: 22 },
-    stat_strength:           { x: 1480, y: 200, w: 80, h: 22 },
-    stat_growth_rate:        { x: 1480, y: 230, w: 80, h: 22 },
-    stat_armor:              { x: 1480, y: 260, w: 80, h: 22 },
-    stat_venom:              { x: 1480, y: 290, w: 80, h: 22 },
-    stat_bite_force:         { x: 1480, y: 320, w: 80, h: 22 },
-    stat_power:              { x: 1480, y: 350, w: 80, h: 22 },
-    stat_nutrient_absorption:{ x: 1480, y: 380, w: 80, h: 22 },
-    stat_water_retention:    { x: 1480, y: 410, w: 80, h: 22 },
-    stat_toxin_tolerance:    { x: 1480, y: 440, w: 80, h: 22 },
-    stat_impact_resistance:  { x: 1480, y: 470, w: 80, h: 22 },
-    stat_pierce_resistance:  { x: 1480, y: 500, w: 80, h: 22 },
-    stat_fire_resistance:    { x: 1480, y: 530, w: 80, h: 22 },
-    stat_frost_resistance:   { x: 1480, y: 560, w: 80, h: 22 },
-    stat_plasma_resistance:  { x: 1480, y: 590, w: 80, h: 22 },
-    stat_lightning_resistance:{ x: 1480, y: 620, w: 80, h: 22 },
-    stat_acid_resistance:    { x: 1480, y: 650, w: 80, h: 22 },
-    stat_venom_resistance:   { x: 1480, y: 680, w: 80, h: 22 },
-    stat_bile_production:    { x: 1480, y: 710, w: 80, h: 22 },
-    // Lineage names
-    father_name:       { x: 90,  y: 540, w: 240, h: 24 },
-    mother_name:       { x: 90,  y: 570, w: 240, h: 24 },
-    grandfather1_name: { x: 90,  y: 600, w: 240, h: 24 },
-    grandfather2_name: { x: 90,  y: 630, w: 240, h: 24 },
-    grandmother1_name: { x: 340, y: 600, w: 240, h: 24 },
-    grandmother2_name: { x: 340, y: 630, w: 240, h: 24 },
-    player_name:       { x: 90,  y: 660, w: 240, h: 24 },
-  },
+// ─── Coordinate helpers ───────────────────────────────────────────────────────
+
+/** Convert a pct-based box to absolute pixels for a given resolution string "WxH" */
+function toPixels(pctBox, resolution) {
+  const [w, h] = resolution.split('x').map(Number)
+  return {
+    x: Math.round(pctBox.xPct * w),
+    y: Math.round(pctBox.yPct * h),
+    w: Math.round(pctBox.wPct * w),
+    h: Math.round(pctBox.hPct * h),
+  }
+}
+
+/** Convert absolute-pixel box to pct-based for a given resolution string "WxH" */
+function toPct(pixBox, resolution) {
+  const [w, h] = resolution.split('x').map(Number)
+  return {
+    xPct: pixBox.x / w,
+    yPct: pixBox.y / h,
+    wPct: pixBox.w / w,
+    hPct: pixBox.h / h,
+  }
+}
+
+/** Detect if a config object uses the old pixel format (has .x) or new pct format (has .xPct) */
+function isPctFormat(box) { return box && 'xPct' in box }
+
+// ─── Default pct-based calibration (reference at 1920×1080 fullscreen) ────────
+// These are the 1920×1080 pixel values divided by 1920/1080, giving ratios
+// that adapt automatically to any screen resolution.
+const DEFAULT_PCT_CONFIG = {
+  species:              { xPct: 0.0469, yPct: 0.0352, wPct: 0.0833, hPct: 0.0259 },
+  gender:               { xPct: 0.1354, yPct: 0.0352, wPct: 0.0208, hPct: 0.0259 },
+  skin_dominant:        { xPct: 0.0469, yPct: 0.0648, wPct: 0.1250, hPct: 0.0241 },
+  skin_recessive:       { xPct: 0.0469, yPct: 0.0926, wPct: 0.1250, hPct: 0.0241 },
+  growth:               { xPct: 0.0469, yPct: 0.1204, wPct: 0.0833, hPct: 0.0241 },
+  ticks:                { xPct: 0.0469, yPct: 0.1481, wPct: 0.0417, hPct: 0.0241 },
+  elder_status:         { xPct: 0.0938, yPct: 0.1481, wPct: 0.0417, hPct: 0.0241 },
+  bloodline_quality:    { xPct: 0.0469, yPct: 0.1759, wPct: 0.0625, hPct: 0.0241 },
+  stat_life_expectancy:     { xPct: 0.7708, yPct: 0.0741, wPct: 0.0417, hPct: 0.0204 },
+  stat_scale_thickness:     { xPct: 0.7708, yPct: 0.1019, wPct: 0.0417, hPct: 0.0204 },
+  stat_stamina:             { xPct: 0.7708, yPct: 0.1296, wPct: 0.0417, hPct: 0.0204 },
+  stat_agility:             { xPct: 0.7708, yPct: 0.1574, wPct: 0.0417, hPct: 0.0204 },
+  stat_strength:            { xPct: 0.7708, yPct: 0.1852, wPct: 0.0417, hPct: 0.0204 },
+  stat_growth_rate:         { xPct: 0.7708, yPct: 0.2130, wPct: 0.0417, hPct: 0.0204 },
+  stat_armor:               { xPct: 0.7708, yPct: 0.2407, wPct: 0.0417, hPct: 0.0204 },
+  stat_venom:               { xPct: 0.7708, yPct: 0.2685, wPct: 0.0417, hPct: 0.0204 },
+  stat_bite_force:          { xPct: 0.7708, yPct: 0.2963, wPct: 0.0417, hPct: 0.0204 },
+  stat_power:               { xPct: 0.7708, yPct: 0.3241, wPct: 0.0417, hPct: 0.0204 },
+  stat_nutrient_absorption: { xPct: 0.7708, yPct: 0.3519, wPct: 0.0417, hPct: 0.0204 },
+  stat_water_retention:     { xPct: 0.7708, yPct: 0.3796, wPct: 0.0417, hPct: 0.0204 },
+  stat_toxin_tolerance:     { xPct: 0.7708, yPct: 0.4074, wPct: 0.0417, hPct: 0.0204 },
+  stat_impact_resistance:   { xPct: 0.7708, yPct: 0.4352, wPct: 0.0417, hPct: 0.0204 },
+  stat_pierce_resistance:   { xPct: 0.7708, yPct: 0.4630, wPct: 0.0417, hPct: 0.0204 },
+  stat_fire_resistance:     { xPct: 0.7708, yPct: 0.4907, wPct: 0.0417, hPct: 0.0204 },
+  stat_frost_resistance:    { xPct: 0.7708, yPct: 0.5185, wPct: 0.0417, hPct: 0.0204 },
+  stat_plasma_resistance:   { xPct: 0.7708, yPct: 0.5463, wPct: 0.0417, hPct: 0.0204 },
+  stat_lightning_resistance:{ xPct: 0.7708, yPct: 0.5741, wPct: 0.0417, hPct: 0.0204 },
+  stat_acid_resistance:     { xPct: 0.7708, yPct: 0.6019, wPct: 0.0417, hPct: 0.0204 },
+  stat_venom_resistance:    { xPct: 0.7708, yPct: 0.6296, wPct: 0.0417, hPct: 0.0204 },
+  stat_bile_production:     { xPct: 0.7708, yPct: 0.6574, wPct: 0.0417, hPct: 0.0204 },
+  father_name:       { xPct: 0.0469, yPct: 0.5000, wPct: 0.1250, hPct: 0.0222 },
+  mother_name:       { xPct: 0.0469, yPct: 0.5278, wPct: 0.1250, hPct: 0.0222 },
+  grandfather1_name: { xPct: 0.0469, yPct: 0.5556, wPct: 0.1250, hPct: 0.0222 },
+  grandfather2_name: { xPct: 0.0469, yPct: 0.5833, wPct: 0.1250, hPct: 0.0222 },
+  grandmother1_name: { xPct: 0.1771, yPct: 0.5556, wPct: 0.1250, hPct: 0.0222 },
+  grandmother2_name: { xPct: 0.1771, yPct: 0.5833, wPct: 0.1250, hPct: 0.0222 },
+  player_name:       { xPct: 0.0469, yPct: 0.6111, wPct: 0.1250, hPct: 0.0222 },
+}
+
+// ─── Bundled calibration path (dev-authored, ships with the build) ─────────────
+// Stored next to the Electron resources so it survives userData wipes.
+// On packed builds: <app>/resources/bundled-calibration.json
+// On dev builds:    project root / bundled-calibration.json
+function getBundledCalibrationPath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'bundled-calibration.json')
+  }
+  return path.join(app.getAppPath(), 'bundled-calibration.json')
+}
+
+function readBundledCalibration() {
+  try { return readJSON(getBundledCalibrationPath()) } catch { return null }
+}
+
+function writeBundledCalibration(pctConfig) {
+  writeJSON(getBundledCalibrationPath(), pctConfig)
+  return { ok: true }
 }
 
 // ─── Box Config ───────────────────────────────────────────────────────────────
 
+/**
+ * Returns a pixel-based box config for the given resolution.
+ * Priority: user-saved pct config > bundled dev config > built-in default.
+ */
 function getBoxConfig(resolution) {
-  const file = path.join(getDir(), `boxconfig-${resolution}.json`)
+  // 1. User-overridden pct config saved in userData
+  const file  = path.join(getDir(), 'boxconfig-pct.json')
   const saved = readJSON(file)
-  if (saved) return saved
-  // Return default if available, else null
-  return DEFAULT_BOX_CONFIGS[resolution] || DEFAULT_BOX_CONFIGS['1920x1080'] || null
+  if (saved) {
+    return _pctConfigToPixels(saved, resolution)
+  }
+
+  // 2. Dev-authored bundled calibration (ships with the build)
+  const bundled = readBundledCalibration()
+  if (bundled) {
+    return _pctConfigToPixels(bundled, resolution)
+  }
+
+  // 3. Built-in default
+  return _pctConfigToPixels(DEFAULT_PCT_CONFIG, resolution)
 }
 
+/** Convert a full pct config object → pixel-based for a given resolution */
+function _pctConfigToPixels(pctConfig, resolution) {
+  const result = {}
+  for (const [field, box] of Object.entries(pctConfig)) {
+    result[field] = toPixels(box, resolution)
+  }
+  return result
+}
+
+/**
+ * Save calibration as pct-based.
+ * Always writes to bundled-calibration.json (Dev-only operation).
+ * `boxes` may arrive as pixel coords (from CalibratePage) — converted to pct.
+ * @param {string} resolution  "1920x1080"
+ * @param {object} boxes       pixel-based OR pct-based per-field boxes
+ */
 function saveBoxConfig(resolution, boxes) {
-  const file = path.join(getDir(), `boxconfig-${resolution}.json`)
-  writeJSON(file, boxes)
-  return { ok: true }
+  const pctConfig = {}
+  for (const [field, box] of Object.entries(boxes)) {
+    pctConfig[field] = isPctFormat(box) ? box : toPct(box, resolution)
+  }
+  return writeBundledCalibration(pctConfig)
 }
 
-function resetBoxConfig(resolution) {
-  const file = path.join(getDir(), `boxconfig-${resolution}.json`)
+function resetBoxConfig() {
+  const file = path.join(getDir(), 'boxconfig-pct.json')
   try { fs.unlinkSync(file) } catch {}
   return { ok: true }
+}
+
+/** Returns the raw pct config (for the calibration UI to display) */
+function getBoxConfigPct() {
+  const file   = path.join(getDir(), 'boxconfig-pct.json')
+  const saved  = readJSON(file)
+  if (saved) return saved
+  const bundled = readBundledCalibration()
+  if (bundled) return bundled
+  return DEFAULT_PCT_CONFIG
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
@@ -137,9 +226,13 @@ function clearCropHistory() {
 
 module.exports = {
   // Box config
-  getBoxConfig, saveBoxConfig, resetBoxConfig,
+  getBoxConfig, saveBoxConfig, resetBoxConfig, getBoxConfigPct,
+  // Bundled calibration
+  writeBundledCalibration, readBundledCalibration,
   // Settings
   getSettings, saveSettings,
   // History
   getCropHistory, appendCropHistory, clearCropHistory,
+  // Helpers (exported for captureService)
+  toPixels, toPct,
 }

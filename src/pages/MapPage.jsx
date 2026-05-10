@@ -1,3 +1,4 @@
+import { isAdmin } from '../lib/roleUtils'
 /**
  * MapPage.jsx — v6.1
  *
@@ -38,20 +39,23 @@ function speciesColor(species) {
 // ── Coord helpers: frac (0-1) ↔ N/S E/W ──────────────────────────────────────
 // x frac: 0 = far west, 0.5 = center (0), 1 = far east
 // y frac: 0 = far north, 0.5 = center (0), 1 = far south
+// Map coordinate space: 800N/S, 800E/W (1600×1600 total)
+const MAP_RANGE = 800
+
 function fracToNSEW(x, y) {
-  const ewAbs = Math.round(Math.abs((x - 0.5) * 200))
-  const nsAbs = Math.round(Math.abs((0.5 - y) * 200))
+  const ewAbs = Math.round(Math.abs((x - 0.5) * MAP_RANGE * 2))
+  const nsAbs = Math.round(Math.abs((0.5 - y) * MAP_RANGE * 2))
   const ewDir = x >= 0.5 ? 'E' : 'W'
   const nsDir = y <= 0.5 ? 'N' : 'S'
   return { nsAbs, ewAbs, nsDir, ewDir }
 }
 
 function nsewToFrac(nsAbs, nsDir, ewAbs, ewDir) {
-  const ns = nsDir === 'N' ? nsAbs : -nsAbs   // positive = north
-  const ew = ewDir === 'E' ? ewAbs : -ewAbs   // positive = east
+  const ns = nsDir === 'N' ? nsAbs : -nsAbs
+  const ew = ewDir === 'E' ? ewAbs : -ewAbs
   return {
-    x: Math.max(0, Math.min(1, ew / 200 + 0.5)),
-    y: Math.max(0, Math.min(1, 0.5 - ns / 200)),
+    x: Math.max(0, Math.min(1, ew / (MAP_RANGE * 2) + 0.5)),
+    y: Math.max(0, Math.min(1, 0.5 - ns / (MAP_RANGE * 2))),
   }
 }
 
@@ -59,7 +63,7 @@ function coordLabel(nsAbs, nsDir, ewAbs, ewDir) {
   return `${nsAbs}${nsDir} ${ewAbs}${ewDir}`
 }
 
-function LocationPicker({ dragon, onSave, onClose, nestingSpots = [], isAdmin = false }) {
+function LocationPicker({ dragon, onSave, onClose, nestingSpots = [], userIsAdmin = false }) {
   const [locId, setLocId] = useState(dragon.location?.id || '')
 
   // Decompose existing coords into abs + direction
@@ -111,7 +115,7 @@ function LocationPicker({ dragon, onSave, onClose, nestingSpots = [], isAdmin = 
             <select value={locId} onChange={e => setLocId(e.target.value)} className={styles.pickerSelect}>
               <option value="">— No location —</option>
               <option value="custom">📍 Custom coordinates (N/S E/W)</option>
-              {isAdmin && nestingSpots.length > 0 && (
+              {userIsAdmin && nestingSpots.length > 0 && (
                 <optgroup label="🥚 Shared Nesting Spots">
                   {nestingSpots.map(s => (
                     <option key={`nest-${s.id}`} value={`nest-${s.id}`}>{s.name}</option>
@@ -136,7 +140,7 @@ function LocationPicker({ dragon, onSave, onClose, nestingSpots = [], isAdmin = 
                 <div className="form-group" style={{ flex: 1 }}>
                   <label>Distance N/S</label>
                   <input
-                    type="number" min="0" step="1"
+                    type="number" min="0" max="800" step="1"
                     value={nsAbs}
                     onChange={e => setNsAbs(e.target.value)}
                     placeholder="0"
@@ -156,7 +160,7 @@ function LocationPicker({ dragon, onSave, onClose, nestingSpots = [], isAdmin = 
                 <div className="form-group" style={{ flex: 1 }}>
                   <label>Distance E/W</label>
                   <input
-                    type="number" min="0" step="1"
+                    type="number" min="0" max="800" step="1"
                     value={ewAbs}
                     onChange={e => setEwAbs(e.target.value)}
                     placeholder="0"
@@ -177,7 +181,7 @@ function LocationPicker({ dragon, onSave, onClose, nestingSpots = [], isAdmin = 
               </p>
 
               {/* Nesting spot — always rendered for admins inside custom */}
-              {isAdmin && (
+              {userIsAdmin && (
                 <div style={{ background: 'var(--surface2)', borderRadius: 8, padding: '10px 12px' }}>
                   <div className="form-group" style={{ marginBottom: 8 }}>
                     <label>Spot name <span style={{ color: 'var(--hint)', fontSize: 11 }}>(required to share as nesting spot)</span></label>
@@ -215,7 +219,7 @@ function LocationPicker({ dragon, onSave, onClose, nestingSpots = [], isAdmin = 
 
 // ─── Map canvas ───────────────────────────────────────────────────────────────
 
-function MapCanvas({ dragons, filterSpecies, filterGrowth, filterUser, isAdmin, onPinClick, onPinMove }) {
+function MapCanvas({ dragons, filterSpecies, filterGrowth, filterUser, userIsAdmin, onPinClick, onPinMove }) {
   const containerRef   = useRef(null)
   const [zoom,  setZoom]  = useState(1)
   const [pan,   setPan]   = useState({ x: 0, y: 0 })
@@ -229,6 +233,7 @@ function MapCanvas({ dragons, filterSpecies, filterGrowth, filterUser, isAdmin, 
   const pinDrag  = useRef(null)  // { dragonId, onMove }
   const [activeDragId, setActiveDragId] = useState(null)
   const [dragPos,      setDragPos]      = useState(null) // { x, y } screen coords while dragging
+  const [stackPopup,   setStackPopup]   = useState(null) // { x, y, group[] }
 
   // Load natural image size
   useEffect(() => {
@@ -397,6 +402,7 @@ function MapCanvas({ dragons, filterSpecies, filterGrowth, filterUser, isAdmin, 
       className={styles.mapContainer}
       onWheel={onWheel}
       onMouseDown={onContainerDown}
+      onClick={() => setStackPopup(null)}
       style={{ cursor: panDrag.current?.moved ? 'grabbing' : 'grab' }}
     >
       {/* Map image + pins */}
@@ -414,43 +420,123 @@ function MapCanvas({ dragons, filterSpecies, filterGrowth, filterUser, isAdmin, 
           />
         )}
 
-        {/* Pins at fixed map coords */}
-        {imgNatural.w > 0 && visible.map(d => {
-          const isDraggingThis = activeDragId === d.id
+        {/* Pins — improved stacking: same-species stacks, different-species spread side-by-side */}
+        {imgNatural.w > 0 && (() => {
+          const SNAP = 0.015  // tighter snap = more accurate grouping
+          const groups = {}
+          visible.forEach(d => {
+            const gx = Math.round(d.location.x / SNAP)
+            const gy = Math.round(d.location.y / SNAP)
+            const key = `${gx}_${gy}`
+            if (!groups[key]) groups[key] = []
+            groups[key].push(d)
+          })
 
-          // While dragging this pin, show it at the live mouse position
-          let pinX = d.location.x * dispW
-          let pinY = d.location.y * dispH
-          if (isDraggingThis && dragPos) {
-            const rect = containerRef.current?.getBoundingClientRect()
-            if (rect) {
-              pinX = dragPos.x - rect.left - pan.x
-              pinY = dragPos.y - rect.top  - pan.y
+          return visible.map(d => {
+            const isDraggingThis = activeDragId === d.id
+            const gx = Math.round(d.location.x / SNAP)
+            const gy = Math.round(d.location.y / SNAP)
+            const key = `${gx}_${gy}`
+            const group = groups[key]
+            const groupIdx = group.indexOf(d)
+            const groupSize = group.length
+
+            let pinX = d.location.x * dispW
+            let pinY = d.location.y * dispH
+
+            if (groupSize > 1 && !isDraggingThis) {
+              // Get unique species in this group for side-by-side spread
+              const uniqueSpecies = [...new Set(group.map(g => g.species))]
+              const mySpeciesIdx = uniqueSpecies.indexOf(d.species)
+              const speciesGroup = group.filter(g => g.species === d.species)
+              const myIdxInSpecies = speciesGroup.indexOf(d)
+
+              // Different species: spread horizontally (side-by-side)
+              const baseSpreadX = Math.min(24 * zoom, 36)
+              pinX += (mySpeciesIdx - (uniqueSpecies.length - 1) / 2) * baseSpreadX
+
+              // Same species stacked: small vertical arc, zoom-aware
+              if (speciesGroup.length > 1) {
+                const stackSpread = Math.min(10 + zoom * 3, 20)
+                pinY += (myIdxInSpecies - (speciesGroup.length - 1) / 2) * stackSpread
+              }
             }
-          }
 
-          const dead = !!d.is_dead
+            if (isDraggingThis && dragPos) {
+              const rect = containerRef.current?.getBoundingClientRect()
+              if (rect) {
+                pinX = dragPos.x - rect.left - pan.x
+                pinY = dragPos.y - rect.top  - pan.y
+              }
+            }
 
-          return (
-            <div
-              key={d.id}
-              className={`${styles.pin} ${dead ? styles.pinDead : ''} ${isDraggingThis ? styles.pinDragging : ''}`}
-              style={{
-                left:  pinX,
-                top:   pinY,
-                color: speciesColor(d.species),
-                pointerEvents: activeDragId && activeDragId !== d.id ? 'none' : 'auto',
-              }}
-              onMouseDown={e => onPinDown(e, d)}
-              onMouseUp={e   => onPinUp(e, d)}
-              title={`${d.ownerUsername || d.player_name || ''} · ${d.species} ${d.gender === 'M' ? '♂' : '♀'}${d.growth ? ' · ' + d.growth : ''}${dead ? ' · DEAD' : ''}`}
-            >
-              <span className={styles.pinIcon}>{dead ? '💀' : speciesEmoji(d.species)}</span>
-              {d.growth && <span className={styles.pinGrowth}>{d.growth[0]}</span>}
-              {isDraggingThis && <span className={styles.pinDragHint}>Drop to move</span>}
+            const dead = !!d.is_dead
+            const isGroupLeader = groupSize > 1 && groupIdx === 0
+            const dragonName = d.name ? `${d.name} (${d.ownerUsername || d.player_name || ''})` : (d.ownerUsername || d.player_name || '')
+
+            return (
+              <div
+                key={d.id}
+                className={`${styles.pin} ${dead ? styles.pinDead : ''} ${isDraggingThis ? styles.pinDragging : ''}`}
+                style={{
+                  left:  pinX,
+                  top:   pinY,
+                  color: speciesColor(d.species),
+                  pointerEvents: activeDragId && activeDragId !== d.id ? 'none' : 'auto',
+                }}
+                onMouseDown={e => onPinDown(e, d)}
+                onMouseUp={e => {
+                  // Short click on group leader = open stack popup
+                  if (!isDraggingThis && groupSize > 1 && e.button === 0) {
+                    e.stopPropagation()
+                    setStackPopup({ x: pinX + pan.x, y: pinY + pan.y, group })
+                    return
+                  }
+                  onPinUp(e, d)
+                }}
+                title={`${dragonName} · ${d.species} ${d.gender === 'M' ? '♂' : '♀'}${dead ? ' · DEAD' : ''}${groupSize > 1 ? ` (${groupSize} here)` : ''}`}
+              >
+                <span className={styles.pinIcon}>{dead ? '💀' : speciesEmoji(d.species)}</span>
+                {d.growth && <span className={styles.pinGrowth}>{d.growth[0]}</span>}
+                {isGroupLeader && (
+                  <span className={styles.pinStackBadge}>{groupSize}</span>
+                )}
+                {isDraggingThis && <span className={styles.pinDragHint}>Drop to move</span>}
+              </div>
+            )
+          })
+        })()}
+
+        {/* Stack popup — mini list when clicking a stacked group */}
+        {stackPopup && (
+          <div
+            className={styles.stackPopup}
+            style={{ left: stackPopup.x + 24, top: stackPopup.y - 8 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className={styles.stackPopupHeader}>
+              {stackPopup.group.length} dragons here
+              <button className={styles.stackPopupClose} onClick={() => setStackPopup(null)}>✕</button>
             </div>
-          )
-        })}
+            {stackPopup.group.map(d => (
+              <div
+                key={d.id}
+                className={styles.stackPopupRow}
+                onClick={() => { onPinClick(d); setStackPopup(null) }}
+              >
+                <span style={{ color: speciesColor(d.species) }}>{speciesEmoji(d.species)}</span>
+                <span className={styles.stackPopupName}>
+                  {d.name || d.ownerUsername || d.player_name || '?'}
+                </span>
+                <span className={styles.stackPopupSpecies}>{d.species}</span>
+                <span style={{ color: d.gender === 'M' ? '#4da6ff' : '#e05a5a', fontSize: 11 }}>
+                  {d.gender === 'M' ? '♂' : d.gender === 'F' ? '♀' : '?'}
+                </span>
+                {d.is_dead && <span className={styles.stackPopupDead}>💀</span>}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Zoom controls */}
@@ -487,17 +573,17 @@ export default function MapPage({ myDragons = [], onSelectDragon, onDragonMoved,
   const [locationTarget, setLocationTarget] = useState(null)
   const [nestingSpots,  setNestingSpots]  = useState([]) // shared nesting spots for admins
 
-  const isAdmin     = !!user?.isAdmin
+  const userIsAdmin = isAdmin(user)
   const showClanTab = false  // Clan map is now its own admin sidebar entry (★ Clan Map)
 
   // Load shared nesting spots (admins only — but all admins see them)
   useEffect(() => {
-    if (isAdmin) {
+    if (userIsAdmin) {
       window.api.nestingSpot?.getAll()
         .then(spots => setNestingSpots(spots || []))
         .catch(() => {})
     }
-  }, [isAdmin])
+  }, [userIsAdmin])
 
   // Load clan data when admin is on clan tab (or in clanMapMode)
   useEffect(() => {
@@ -540,7 +626,7 @@ export default function MapPage({ myDragons = [], onSelectDragon, onDragonMoved,
       addToast(location ? `Location set to "${location.label}"` : 'Location cleared', 'success')
 
       // If admin saved a nesting spot, persist it to Firestore for all admins
-      if (isAdmin && location?.isNest && location?.spotName) {
+      if (userIsAdmin && location?.isNest && location?.spotName) {
         try {
           await window.api.nestingSpot.save({
             name: location.spotName,
@@ -616,7 +702,7 @@ export default function MapPage({ myDragons = [], onSelectDragon, onDragonMoved,
           filterSpecies={filterSpecies}
           filterGrowth={filterGrowth}
           filterUser={filterUser}
-          isAdmin={isAdmin}
+          userIsAdmin={userIsAdmin}
           onPinClick={d => onSelectDragon?.(d.id)}
           onPinMove={handlePinMove}
         />
@@ -642,7 +728,7 @@ export default function MapPage({ myDragons = [], onSelectDragon, onDragonMoved,
           onSave={loc => handleLocationSave(locationTarget, loc)}
           onClose={() => setLocationTarget(null)}
           nestingSpots={nestingSpots}
-          isAdmin={isAdmin}
+          userIsAdmin={userIsAdmin}
         />
       )}
     </div>

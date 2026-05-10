@@ -211,6 +211,10 @@
   padding: 10px 14px 4px;
 }
 
+.navSectionDev {
+  color: rgba(82, 145, 245, 0.7);
+}
+
 .navAdminBtn {
   border-left: 2px solid rgba(201,147,42,0.3);
 }
@@ -219,4 +223,39 @@
 .navAdminBtn.navActive {
   border-left-color: #c9932a;
   color: #c9932a;
+}
+
+.navDevBtn {
+  border-left: 2px solid rgba(82,145,245,0.3);
+}
+
+.navDevBtn:hover,
+.navDevBtn.navActive {
+  border-left-color: #5291f5;
+  color: #5291f5;
+}
+
+.devBadge {
+  font-size: 10px;
+  margin-left: 4px;
+  color: #5291f5;
+  opacity: 0.85;
+}
+
+/* ── Beta1.0: Locked nav items (member-only restriction) ── */
+.navLocked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.navLocked:hover {
+  background: transparent;
+  color: var(--muted);
+}
+
+.lockIcon {
+  margin-left: auto;
+  font-size: 10px;
+  opacity: 0.7;
 }

@@ -140,14 +140,29 @@ async function loadFolder(folderName) {
         const buf       = fs.readFileSync(path.join(labelDir, file))
         const histogram = await buildHistogram(buf)
         const pHash     = await buildPHash(buf)
-        entries.push({ label, histogram, pHash, file })
+
+        // Parse recessive grade from filename convention:
+        // "A.png"      → dominant=A (folder label), recessive=null
+        // "Ax.png"     → dominant=A, recessive=null  (x = visual variant)
+        // "A_B+.png"   → dominant=A, recessive=B+
+        // "Ax_A.png"   → dominant=A, recessive=A
+        const baseName = path.basename(file, path.extname(file))
+        let recessive = null
+        if (baseName.includes('_')) {
+          // Everything after the first underscore is the recessive grade
+          const parts = baseName.split('_')
+          const rPart = parts.slice(1).join('_').replace(/[^A-Za-z+\-]/g, '')
+          if (rPart) recessive = rPart
+        }
+
+        entries.push({ label, recessive, histogram, pHash, file })
       } catch (err) {
         console.warn(`[template] Could not load ${folderName}/${label}/${file}:`, err.message)
       }
     }
   }
   _cache.set(folderName, entries)
-  console.log(`[template] Loaded ${entries.length} templates for "${folderName}"`)
+  if (process.env.NODE_ENV !== "production") console.log(`[template] Loaded ${entries.length} templates for "${folderName}"`)
 }
 
 async function loadField(fieldName) {
@@ -185,14 +200,20 @@ async function matchTemplate(imageBuffer, fieldName) {
   const queryHist  = await buildHistogram(imageBuffer)
   const queryPHash = await buildPHash(imageBuffer)
 
-  let bestLabel = null
-  let bestScore = -Infinity
+  let bestLabel     = null
+  let bestRecessive = null
+  let bestScore     = -Infinity
+  let secondScore   = -Infinity
 
   for (const tmpl of templates) {
     const score = combinedScore(tmpl, queryHist, queryPHash)
     if (score > bestScore) {
-      bestScore = score
-      bestLabel = tmpl.label
+      secondScore   = bestScore
+      bestScore     = score
+      bestLabel     = tmpl.label
+      bestRecessive = tmpl.recessive || null
+    } else if (score > secondScore) {
+      secondScore = score
     }
   }
 
@@ -204,24 +225,51 @@ async function matchTemplate(imageBuffer, fieldName) {
     return null
   }
 
-  return { label: bestLabel, confidence: bestScore }
+  const gap = bestScore - Math.max(secondScore, 0)
+  return { label: bestLabel, recessive: bestRecessive, confidence: bestScore, gap }
 }
 
 // ─── Training data management ─────────────────────────────────────────────────
 
+/**
+ * In production, training-data inside the asar is read-only.
+ * We write new samples to userData/training-data/ instead, then
+ * the loader checks both locations (bundled first, then user).
+ */
+function getWritableTrainingDataDir() {
+  if (!app.isPackaged) return path.join(__dirname, '..', '..', 'training-data')
+  return path.join(app.getPath('userData'), 'training-data')
+}
+
 async function saveTrainingSample(imageBuffer, fieldName, label) {
-  // Stats all go into the shared stats/ folder
-  const folder = folderForField(fieldName)
-  const labelDir = path.join(getTrainingDataDir(), folder, label)
+  const folder   = folderForField(fieldName)
+  const labelDir = path.join(getWritableTrainingDataDir(), folder, label)
   fs.mkdirSync(labelDir, { recursive: true })
 
   const fname = `sample_${Date.now()}.png`
   await sharp(imageBuffer).png().toFile(path.join(labelDir, fname))
 
-  // Invalidate cache for this folder
+  // Invalidate cache so next match uses updated templates
   _cache.delete(cacheKeyForField(fieldName))
 
   return { ok: true, path: path.join(labelDir, fname) }
+}
+
+/**
+ * Save multiple training samples at once (used by dev capture tool).
+ * entries: Array<{ imageBuffer: Buffer, fieldName: string, label: string }>
+ */
+async function saveBatchSamples(entries) {
+  const results = []
+  for (const { imageBuffer, fieldName, label } of entries) {
+    try {
+      const r = await saveTrainingSample(imageBuffer, fieldName, label)
+      results.push({ fieldName, label, ok: true, path: r.path })
+    } catch (err) {
+      results.push({ fieldName, label, ok: false, error: err.message })
+    }
+  }
+  return results
 }
 
 function listTrainingSamples() {
@@ -287,6 +335,7 @@ async function reloadField(fieldName) {
 }
 
 module.exports = {
+  saveBatchSamples,
   ICON_FIELDS,
   STAT_FIELDS,
   ALL_TEMPLATE_FIELDS,

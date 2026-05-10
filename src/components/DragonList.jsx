@@ -129,9 +129,9 @@ function DragonCard({ dragon: d, selected, onSelect, index, onEdit, onDelete, on
     .filter(t => t.pts > 0)
     .sort((a, b) => b.pts - a.pts)[0] || null
 
-  // Dragon display name = account label (ownerUsername) or player_name fallback
-  const dragonDisplayName = d.ownerUsername || d.player_name || 'Unknown'
-  // Main account = user-level displayName
+  // Account label (Steam handle that owns this dragon)
+  const accountLabel = d.ownerUsername || d.player_name || 'Unknown'
+  // Main clan owner (displayName of the user)
   const ownerDisplay = d.ownerDisplayName || d.ownerUsername || d.player_name || 'Unknown'
 
   const roleDisplay = d.clan_role || '—'
@@ -154,17 +154,30 @@ function DragonCard({ dragon: d, selected, onSelect, index, onEdit, onDelete, on
 
         <div className={styles.inner}>
           <div className={styles.cardHeader}>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+
+              {/* Line 1: Account · Species + badges */}
               <div className={styles.titleRow}>
                 <span className={styles.speciesIcon}>{isDead ? '💀' : species.icon}</span>
-                <span className={`${styles.name} ${isDead ? styles.nameDead : ''}`}>
-                  {dragonDisplayName} · {d.species}
+                <span className={`${styles.accountSpecies} ${isDead ? styles.nameDead : ''}`}>
+                  {accountLabel}
+                  <span className={styles.titleDot}>·</span>
+                  {d.species}
                 </span>
                 <span className={genderClass} style={{ fontSize: '15px', fontWeight: '700' }}>{genderGlyph}</span>
                 {isElder && !isDead && <span className={styles.elderBadge}>ELDER</span>}
                 {isDead  && <span className={styles.deadBadge}>DEAD</span>}
                 {d.is_hungry && !isDead && <span title="Hungry" style={{ fontSize: 14 }}>🍖</span>}
               </div>
+
+              {/* Line 2: Dragon name (if set) */}
+              {d.name && (
+                <div className={styles.dragonName}>
+                  {d.name}
+                </div>
+              )}
+
+              {/* Line 3: Owner */}
               <div className={styles.owner}>Owner: <b>{ownerDisplay}</b></div>
             </div>
           </div>

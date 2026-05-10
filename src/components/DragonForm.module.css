@@ -92,6 +92,70 @@
   gap: 10px;
 }
 
+/* ── Two-column in-game stat layout ── */
+.statGrid2Col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.statCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.statColHeader {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.statRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.statRow label {
+  font-size: 12px;
+  margin: 0;
+  white-space: nowrap;
+}
+.statRow select {
+  width: 72px;
+  font-size: 12px;
+  padding: 3px 6px;
+}
+
+/* ── Recessive stats toggle ── */
+.rstatToggle {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s;
+}
+.rstatToggle:hover { color: var(--text); }
+.rstatBadge {
+  font-size: 9px;
+  background: var(--accent);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* ── Footer ── */
 .footer {
   display: flex;
@@ -154,4 +218,51 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* ── Harem grid ── */
+.haremGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.haremCard {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+}
+.haremCard:hover {
+  border-color: var(--accent);
+  background: rgba(92,114,245,0.08);
+}
+.haremSelected {
+  border-color: var(--accent) !important;
+  background: rgba(92,114,245,0.15) !important;
+}
+.haremSharedParent {
+  opacity: 0.6;
+  border-style: dashed;
+}
+.haremGender { font-size: 13px; font-weight: 700; }
+.haremName   { font-weight: 600; }
+.haremSub    { font-size: 10px; color: var(--muted); }
+.haremWarn   { font-size: 11px; color: #e0a03a; }
+.haremCheck  { font-size: 12px; color: var(--accent); font-weight: 700; margin-left: 2px; }
+
+/* ── Ticks dual-input row ── */
+.ticksInputRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
 }

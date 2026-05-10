@@ -13,6 +13,7 @@
 
 .main {
   flex: 1;
+  min-height: 0;          /* Beta1.1 fix: allow shrinking in flex column */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -103,6 +104,7 @@
 .content {
   display: flex;
   flex: 1;
+  min-height: 0;          /* Beta1.1 fix */
   overflow: hidden;
   position: relative;
 }
