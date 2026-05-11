@@ -1,4 +1,4 @@
-# DoD Tracker
+# DoD Tracker 1.3
 
 A desktop app for tracking your dragons in **Day of Dragons** — with AI-powered stat capture via F8.
 

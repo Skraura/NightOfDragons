@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { GRADES, ALL_SKINS, STAT_LABELS, ALL_STAT_KEYS, getGradeClass, SPECIES_LIST } from '../lib/dragonData'
 import { calcStatOutcome, calcSkinOutcome, getBroodCrit, skinRarityLabel, GRADE_TO_NUM } from '../lib/nestingEngine'
 import { useApp } from '../App'
-import { isAdmin } from '../lib/roleUtils'
+import { isAdmin, canSeeBreederContent } from '../lib/roleUtils'
 import styles from './NestingCalculator.module.css'
 
 const STAT_KEYS = ALL_STAT_KEYS
@@ -25,7 +25,8 @@ function shareParent(a, b) {
 
 export default function NestingCalculator({ dragons = [] }) {
   const { user } = useApp()
-  const userIsAdmin = isAdmin(user)
+  const userIsAdmin       = isAdmin(user)
+  const userCanSeeBreeder = canSeeBreederContent(user)
 
   const [momId, setMomId]   = useState('')
   const [dadId, setDadId]   = useState('')
@@ -77,6 +78,7 @@ export default function NestingCalculator({ dragons = [] }) {
     const oppositeGender = firstDragon.gender === 'M' ? 'F' : 'M'
     return dragons.filter(d => {
       if (d.id === firstDragon.id) return false
+      if (d.is_egg) return false
       if (d.species !== firstDragon.species) return false
       if (d.gender && d.gender !== oppositeGender) return false
       if (shareParent(d, firstDragon)) return false
@@ -84,13 +86,14 @@ export default function NestingCalculator({ dragons = [] }) {
     })
   }, [popup, dragons])
 
-  // Breeder pairings: pairs where both dragons have clan_role === 'Breeder'
+  // Breeder pairings: same species, opposite gender (known), no shared parents, no eggs
+  // Visible to: Breeder, Admin, Dev
   const breederPairings = useMemo(() => {
-    if (!userIsAdmin) return []
-    const breeders = dragons.filter(d => d.clan_role === 'Breeder')
+    if (!userCanSeeBreeder) return []
+    const breeders = dragons.filter(d => d.clan_role === 'Breeder' && !d.is_egg && !d.is_dead)
     const pairs = []
-    const females = breeders.filter(d => d.gender === 'F' || !d.gender)
-    const males = breeders.filter(d => d.gender === 'M' || !d.gender)
+    const females = breeders.filter(d => d.gender === 'F')
+    const males   = breeders.filter(d => d.gender === 'M')
     females.forEach(f => {
       males.forEach(m => {
         if (f.species !== m.species) return
@@ -99,7 +102,7 @@ export default function NestingCalculator({ dragons = [] }) {
       })
     })
     return pairs
-  }, [dragons, userIsAdmin])
+  }, [dragons, userCanSeeBreeder])
 
   const speciesMismatch =
     mom.species && dad.species && mom.species !== dad.species
@@ -146,11 +149,11 @@ export default function NestingCalculator({ dragons = [] }) {
 
       <div className={styles.layout}>
         {/* ── Breeder Pairings (Admin/Dev only) ── */}
-        {userIsAdmin && breederPairings.length > 0 && (
+        {userCanSeeBreeder && breederPairings.length > 0 && (
           <div className={styles.breederSection}>
             <div className={styles.breederHeader}>
-              <span className={styles.breederTitle}>🔒 Breeder Pairings</span>
-              <span className={styles.breederSub}>Admin/Dev only · {breederPairings.length} compatible pair{breederPairings.length !== 1 ? 's' : ''}</span>
+              <span className={styles.breederTitle}>🐣 Breeder Pairings</span>
+              <span className={styles.breederSub}>{breederPairings.length} compatible pair{breederPairings.length !== 1 ? 's' : ''}</span>
             </div>
             <div className={styles.breederList}>
               {breederPairings.map((pair, i) => (
@@ -160,9 +163,9 @@ export default function NestingCalculator({ dragons = [] }) {
                   onClick={() => applyBreederPair(pair)}
                   title="Click to load this pair into the calculator"
                 >
-                  <span className={styles.breederFemale}>♀ {pair.female.name || 'Unnamed'}</span>
+                  <span className={styles.breederFemale}>♀ {pair.female.player_name || pair.female.name || 'Unknown'}</span>
                   <span className={styles.breederX}>×</span>
-                  <span className={styles.breederMale}>♂ {pair.male.name || 'Unnamed'}</span>
+                  <span className={styles.breederMale}>♂ {pair.male.player_name || pair.male.name || 'Unknown'}</span>
                   <span className={styles.breederSpecies}>{pair.female.species}</span>
                 </button>
               ))}
@@ -367,6 +370,7 @@ function MatePopup({ side, firstDragon, candidates, onSelect, onClose }) {
     if (!search) return true
     const q = search.toLowerCase()
     return (
+      (d.player_name || '').toLowerCase().includes(q) ||
       (d.name || '').toLowerCase().includes(q) ||
       (d.species || '').toLowerCase().includes(q)
     )
@@ -381,7 +385,7 @@ function MatePopup({ side, firstDragon, candidates, onSelect, onClose }) {
               {genderIcon} Select {label}
             </h3>
             <p className={styles.popupSub}>
-              Same species as <strong>{firstDragon.name || 'selected dragon'}</strong> ({firstDragon.species}) · opposite gender · no shared parents
+              Same species as <strong>{firstDragon.player_name || firstDragon.name || 'selected dragon'}</strong> ({firstDragon.species}) · opposite gender · no shared parents
             </p>
           </div>
           <button className={styles.popupClose} onClick={onClose}>✕</button>
@@ -389,7 +393,7 @@ function MatePopup({ side, firstDragon, candidates, onSelect, onClose }) {
         <div className={styles.popupSearch}>
           <input
             autoFocus
-            placeholder="Search by name…"
+            placeholder="Search by account…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className={styles.popupSearchInput}
@@ -406,7 +410,7 @@ function MatePopup({ side, firstDragon, candidates, onSelect, onClose }) {
           {filtered.map(d => (
             <button key={d.id} className={styles.popupItem} onClick={() => onSelect(d.id)}>
               <span className={styles.popupItemGender}>{d.gender === 'M' ? '♂' : d.gender === 'F' ? '♀' : '?'}</span>
-              <span className={styles.popupItemName}>{d.name || 'Unnamed'}</span>
+              <span className={styles.popupItemName}>{d.player_name || d.name || 'Unknown'}</span>
               <span className={styles.popupItemSpecies}>{d.species}</span>
               {d.clan_role && <span className={styles.popupItemRole}>{d.clan_role}</span>}
               {d.bloodline_quality && <span className={styles.popupItemBQ}>{d.bloodline_quality}</span>}
@@ -463,7 +467,7 @@ function ParentPanel({ side, label, parentId, parent, dragons, otherParentId, on
                 <option value="">— Manual entry —</option>
                 {genderedDragons.map(d => (
                   <option key={d.id} value={d.id}>
-                    {d.name || 'Unnamed'} ({d.species}){d.clan_role === 'Breeder' ? ' 🐣' : ''}
+                    {d.player_name || d.name || 'Unknown'} ({d.species}){d.clan_role === 'Breeder' ? ' 🐣' : ''}
                   </option>
                 ))}
               </select>

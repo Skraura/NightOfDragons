@@ -48,7 +48,7 @@ export const SKIN_RARITY_MAP = (() => {
 
 // Skins available to ALL species (union of common + base universal)
 export const SKINS_UNIVERSAL = [
-  'Crimson', 'Leucistic', 'Leumelan', 'Melanistic', 'Gold', 'Albino', 'Brindle',
+  'Crimson', 'Leucistic', 'Leumelan', 'Melanistic', 'Gold', 'Albino', 'Brindle', 'Iconic', 
 ]
 
 // Species-specific skins (keyed by species code)
@@ -79,6 +79,7 @@ export const SKIN_COLORS = {
   'Leucistic':     '#a8c4d0',
   'Leumelan':      '#7f8c8d',
   'Melanistic':    '#2c3e50',
+  'Iconic':      '#7f8c8d',
   'Brindle':       '#6b4c2a',
   'Albino':        '#f0ece8',
   'Ember Dawn':    '#e8722a',
@@ -238,55 +239,113 @@ export function ticksFromGrowth(growth) {
 // Each entry: { id, label, x, y }  where x/y are 0-1 fractions of the map image
 export const MAP_LOCATIONS = [
   // Major biomes / landmarks
-  { id: 'elder_forest',   label: 'Elder Forest',    x: 0.12, y: 0.52 },
-  { id: 'lime',           label: 'Lime',             x: 0.11, y: 0.33 },
-  { id: 'misty',          label: 'Misty',            x: 0.10, y: 0.08 },
-  { id: 'north_open',     label: 'North Open',       x: 0.42, y: 0.05 },
-  { id: 'big_snowy',      label: 'Big Snowy',        x: 0.65, y: 0.12 },
-  { id: 'bacon',          label: 'Bacon',            x: 0.85, y: 0.08 },
-  { id: 'east_redwood',   label: 'East Redwood',     x: 0.80, y: 0.40 },
-  { id: 'west_redwood',   label: 'West Redwood',     x: 0.38, y: 0.22 },
-  { id: 'middle_redwood', label: 'Middle Redwood',   x: 0.55, y: 0.38 },
-  { id: 'arch',           label: 'Arch',             x: 0.52, y: 0.30 },
-  { id: 'lake',           label: 'Lake',             x: 0.60, y: 0.43 },
-  { id: 'big_rock',       label: 'Big Rock',         x: 0.62, y: 0.50 },
-  { id: 'world_tree',     label: 'World Tree',       x: 0.47, y: 0.55 },
-  { id: 'waterfall',      label: 'Waterfall',        x: 0.38, y: 0.58 },
-  { id: 'four_ponds',     label: 'Four Ponds',       x: 0.35, y: 0.63 },
-  { id: 'river',          label: 'River',            x: 0.44, y: 0.68 },
-  { id: 'pride_rock',     label: 'Pride Rock',       x: 0.59, y: 0.63 },
-  { id: 'throne',         label: 'Throne',           x: 0.71, y: 0.65 },
-  { id: 'ravine',         label: 'Ravine',           x: 0.72, y: 0.72 },
-  { id: 'south_east_open',label: 'South-East Open',  x: 0.73, y: 0.78 },
-  { id: 'swamp',          label: 'Swamp',            x: 0.45, y: 0.90 },
-  { id: 'swamp_west',     label: 'Swamp West',       x: 0.38, y: 0.93 },
-  { id: 'swamp_east',     label: 'Swamp East',       x: 0.55, y: 0.93 },
-  { id: 'ancient_forest', label: 'Ancient Forest',   x: 0.86, y: 0.90 },
-  { id: 'croissant',      label: 'Croissant',        x: 0.17, y: 0.92 },
-  // Sub-locations
-  { id: 'paradise',       label: 'Paradise',         x: 0.34, y: 0.38 },
-  { id: 'golf_course',    label: 'Golf Course',      x: 0.33, y: 0.52 },
-  { id: 'river_ridge',    label: 'River Ridge',      x: 0.25, y: 0.66 },
-  { id: 'titan',          label: 'Titan',            x: 0.21, y: 0.68 },
-  { id: 'bunker',         label: 'Bunker',           x: 0.13, y: 0.60 },
-  { id: 'pixel',          label: 'Pixel',            x: 0.20, y: 0.62 },
-  { id: 'elder_tree',     label: 'Elder Tree',       x: 0.16, y: 0.78 },
-  { id: 'mesh',           label: 'Mesh',             x: 0.12, y: 0.88 },
-  { id: 'bio_island',     label: 'Bio Island',       x: 0.57, y: 0.43 },
-  { id: 'ramp_rock',      label: 'Ramp Rock',        x: 0.80, y: 0.36 },
-  { id: 'crater_pond',    label: 'Crater Pond',      x: 0.82, y: 0.64 },
-  { id: 'brood_pond',     label: 'Brood Pond',       x: 0.85, y: 0.76 },
-  { id: 'little_snow',    label: 'Little Snow',      x: 0.22, y: 0.38 },
-  { id: 'lime_ridge',     label: 'Lime Ridge',       x: 0.09, y: 0.43 },
-  { id: 'lime_forest',    label: 'Lime Forest',      x: 0.23, y: 0.20 },
-  { id: 'craters',        label: 'Craters',          x: 0.13, y: 0.17 },
-  { id: 'se_pond',        label: 'SE Pond',          x: 0.72, y: 0.50 },
-  { id: 'stadium_pond',   label: 'Stadium Pond',     x: 0.61, y: 0.73 },
-  { id: 'lotus',          label: 'Lotus',            x: 0.48, y: 0.68 },
-  { id: 'snapper_pond',   label: 'Snapper Pond',     x: 0.46, y: 0.72 },
-  { id: 'rivers_end',     label: "River's End",      x: 0.38, y: 0.78 },
-  { id: 'swamp_falls',    label: 'Swamp Falls',      x: 0.43, y: 0.85 },
-  { id: 'brood_quest',    label: 'Brood Quest',      x: 0.78, y: 0.93 },
-  { id: 'ancient_pond',   label: 'Ancient Pond',     x: 0.89, y: 0.84 },
-  { id: 'custom',         label: '📍 Custom coords…', x: null, y: null },
+  { id: 'elder_forest',   label: 'Elder Forest',    x: 0.12,    y: 0.52 },
+  { id: 'bunker',         label: 'Bunker',          x: 0.13,    y: 0.60 },
+  { id: 'titan',          label: 'Titan',           x: 0.21,    y: 0.68 },
+  { id: 'putt_putt',      label: 'Putt Putt',       x: 0.1179,  y: 0.7202 },
+  { id: 'green_tree',     label: 'Green Tree',      x: 0.1192,  y: 0.7902 },
+  { id: 'cliff_pond',     label: 'Cliff Pond',      x: 0.044,   y: 0.7306 },
+  { id: 'murder',         label: 'Murder',          x: 0.0544,  y: 0.7707 },
+  { id: 'mesh',           label: 'Mesh',            x: 0.0738,  y: 0.8847 },
+  { id: 'sliver_pond',    label: 'Sliver Pond',     x: 0.0311,  y: 0.8264 },
+
+  { id: 'ancient_forest', label: 'Ancient Forest',  x: 0.8925,  y: 0.9547 },
+  { id: 'ancient_pond',   label: 'Ancient Pond',    x: 0.9378,  y: 0.9184 },
+  { id: 'arch',           label: 'Arch',            x: 0.5389,  y: 0.3523 },
+  { id: 'bacon',          label: 'Bacon',           x: 0.8472,  y: 0.0764 },
+  { id: 'big_rock',       label: 'Big Rock',        x: 0.5091,  y: 0.5285 },
+  { id: 'big_snowy',      label: 'Big Snowy',       x: 0.6425,  y: 0.1891 },
+  { id: 'bio_island',     label: 'Bio Island',      x: 0.5803,  y: 0.4832 },
+  { id: 'brood_pond',     label: 'Brood Pond',      x: 0.864,   y: 0.8329 },
+  { id: 'brood_quest',    label: 'Brood Quest',     x: 0.7565,  y: 0.9534 },
+  { id: 'crater_pond',    label: 'Crater Pond',     x: 0.8523,  y: 0.6878 },
+  { id: 'craters',        label: 'Craters',         x: 0.1464,  y: 0.1256 },
+  { id: 'east_redwood',   label: 'East Redwood',    x: 0.8562,  y: 0.4365 },
+  { id: 'four_ponds',     label: 'Four Ponds',      x: 0.3484,  y: 0.6788 },
+  { id: 'golf_course',    label: 'Golf Course',     x: 0.3264,  y: 0.5933 },
+  { id: 'lake',           label: 'Lake',            x: 0.6062,  y: 0.4508 },
+  { id: 'lime',           label: 'Lime',            x: 0.1697,  y: 0.307 },
+  { id: 'lime_forest',    label: 'Lime Forest',     x: 0.285,   y: 0.1541 },
+  { id: 'lime_ridge',     label: 'Lime Ridge',      x: 0.09,    y: 0.43 },
+  { id: 'little_snowy',   label: 'Little Snowy',    x: 0.22,    y: 0.38 },
+  { id: 'lotus',          label: 'Lotus',           x: 0.48,    y: 0.68 },
+  { id: 'misty',          label: 'Misty',           x: 0.1166,  y: 0.0492 },
+  { id: 'north_open',     label: 'North Open',      x: 0.4715,  y: 0.0648 },
+  { id: 'outpost',        label: 'Outpost',         x: 0.1567,  y: 0.9313 },
+  { id: 'paradise',       label: 'Paradise',        x: 0.34,    y: 0.38 },
+  { id: 'pixel',          label: 'Pixel',           x: 0.2474,  y: 0.6321 },
+  { id: 'pride_rock',     label: 'Pride Rock',      x: 0.7824,  y: 0.4093 },
+  { id: 'ramp_rock',      label: 'Fake Rock',       x: 0.592,   y: 0.6412 },
+  { id: 'ravine',         label: 'Ravine',          x: 0.7124,  y: 0.7837 },
+  { id: 'river',          label: 'River',           x: 0.44,    y: 0.68 },
+  { id: 'river_ridge',    label: 'River Ridge',     x: 0.25,    y: 0.66 },
+  { id: 'rivers_end',     label: "River's End",     x: 0.3692,  y: 0.7902 },
+  { id: 'se_pond',        label: 'SE Pond',         x: 0.5544,  y: 0.5596 },
+  { id: 'snapper_pond',   label: 'Snapper Pond',    x: 0.46,    y: 0.72 },
+  { id: 'south_east_open',label: 'South-East Open', x: 0.7319,  y: 0.8666 },
+  { id: 'stadium_pond',   label: 'Stadium Pond',    x: 0.61,    y: 0.73 },
+  { id: 'swamp',          label: 'Swamp',           x: 0.5117,  y: 0.9585 },
+  { id: 'swamp_east',     label: 'Swamp East',      x: 0.6127,  y: 0.9417 },
+  { id: 'swamp_falls',    label: 'Swamp Falls',     x: 0.4313,  y: 0.908 },
+  { id: 'swamp_west',     label: 'Swamp West',      x: 0.4054,  y: 0.9754 },
+  { id: 'throne',         label: 'Throne',          x: 0.7241,  y: 0.6904 },
+  { id: 'west_redwood',   label: 'West Redwood',    x: 0.38,    y: 0.22 },
+  { id: 'world_tree',     label: 'World Tree',      x: 0.4391,  y: 0.5777 }
+
 ]
+
+// ── Crystal System (Beta1.3) ─────────────────────────────────────────────────
+// Day: crystal color depends on elder % progress
+// Night: crystal color depends on species element
+
+export const CRYSTAL_COLORS = ['Green', 'Cyan', 'Blue', 'Magenta', 'Red', 'Yellow']
+
+// Day crystal: which color band does a given % (0–1) fall into?
+// White (0%) = all → no column needed. Bands from image:
+//   Green:   0% – 15%
+//   Cyan:    15% – 30%
+//   Blue:    30% – 45%
+//   Magenta: 45% – 60%
+//   Red:     60% – 75%
+//   Yellow:  75% – 100%
+export function getDayCrystal(pct) {
+  const p = pct * 100
+  if (p < 15)  return 'Green'
+  if (p < 30)  return 'Cyan'
+  if (p < 45)  return 'Blue'
+  if (p < 60)  return 'Magenta'
+  if (p < 75)  return 'Red'
+  return 'Yellow'
+}
+
+// Night crystal: depends on species element
+// ASD = Acid → Green
+// BIO = Bioluminescent (no element yet, closest = Acid/Green)
+// BS  = Blitz Striker → Lightning → Magenta
+// SS  = Shadow Scale  → Ice/Frost → Cyan
+// FS  = Flame Stalker → Fire → Red
+// IR  = Inferno Ravager → Fire → Red
+// BW  = Broodwatcher → Venom → Yellow
+export const SPECIES_ELEMENT = {
+  ASD: { element: 'Acid',      crystal: 'Green'   },
+  BIO: { element: 'None',      crystal: 'None'   },
+  BS:  { element: 'Lightning', crystal: 'Magenta' },
+  SS:  { element: 'Plasma',    crystal: 'Blue'    },
+  FS:  { element: 'Fire',      crystal: 'Red'     },
+  IR:  { element: 'Fire',      crystal: 'Red'     },
+  BW:  { element: 'Venom',     crystal: 'Yellow'  },
+}
+
+export function getNightCrystal(speciesCode) {
+  return SPECIES_ELEMENT[speciesCode]?.crystal || null
+}
+
+// CSS color values for each crystal column header
+export const CRYSTAL_CSS = {
+  Green:   { bg: 'rgba(76,175,80,0.15)',   border: 'rgba(76,175,80,0.4)',   text: '#66bb6a' },
+  Cyan:    { bg: 'rgba(0,188,212,0.15)',   border: 'rgba(0,188,212,0.4)',   text: '#26c6da' },
+  Blue:    { bg: 'rgba(33,150,243,0.15)',  border: 'rgba(33,150,243,0.4)',  text: '#42a5f5' },
+  Magenta: { bg: 'rgba(233,30,99,0.15)',   border: 'rgba(233,30,99,0.4)',   text: '#ec407a' },
+  Red:     { bg: 'rgba(244,67,54,0.15)',   border: 'rgba(244,67,54,0.4)',   text: '#ef5350' },
+  Yellow:  { bg: 'rgba(255,193,7,0.15)',   border: 'rgba(255,193,7,0.4)',   text: '#ffca28' },
+}

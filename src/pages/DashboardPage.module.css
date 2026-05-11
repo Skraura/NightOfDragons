@@ -160,3 +160,50 @@
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
+
+/* ── Beta1.3: Split Add button ── */
+.splitBtn {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.splitBtnMain {
+  border-radius: 8px 0 0 8px !important;
+  border-right: 1px solid rgba(255,255,255,0.15) !important;
+  flex: 1;
+}
+
+.splitBtnArrow {
+  border-radius: 0 8px 8px 0 !important;
+  padding: 0 8px !important;
+  min-width: 28px;
+}
+
+.splitDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 500;
+  min-width: 130px;
+  overflow: hidden;
+}
+
+.splitDropItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.splitDropItem:hover { background: var(--surface2); }

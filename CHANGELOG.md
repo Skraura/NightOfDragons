@@ -1,5 +1,84 @@
 # DoD Tracker — Changelog
 
+## Beta1.3 (2026-05-11) — Code v1.3
+
+### Bug Fixes & UI Polish
+
+#### Add Egg Pop-up — Padding Fix
+- `EggForm` now uses its own dedicated CSS module (`EggForm.module.css`) instead of borrowing `DragonForm.module.css`
+- Proper `20–24px` padding on header, body and footer — border no longer crowds the text and fields
+- Confirm-discard overlay now positions correctly inside the modal (added `position: relative` to modal root)
+
+#### Eggs in Nesting — Excluded
+- Eggs (`is_egg: true`) are now filtered out of the Nesting Calculator dragon pool entirely — they will not appear as pairable parents
+- Popup partner candidates also exclude eggs
+- Breeder Pairings list excludes eggs and dead dragons
+
+#### Egg Edit Tab
+- Clicking **Edit** on an egg now opens `EggForm` (not `DragonForm`)
+- `EggForm` supports edit mode: pre-fills all fields from the existing egg record, shows "Edit Egg" title and "Save Egg" button
+- `handleSaveEgg` routes to `dragon.update` when editing vs `dragon.create` when adding new
+
+#### Breeder Pairings — Correct Filtering
+- Pairings now require **known, opposite gender** (no more `!d.gender` fallback that paired unknowns with both sexes)
+- Dead dragons excluded from the pool
+- Eggs excluded from the pool
+- Fixed stale `useMemo` dependency (`userIsAdmin` → `userCanSeeBreeder`)
+
+#### Elder Tab — My Dragons / All Members Switch
+- Admins and Devs now see a **My Dragons / All Members** toggle in the Elder Tracker header
+- Default is "My Dragons"; switching to "All Members" shows the full clan pool
+- Members see only their own dragons (no switch shown)
+- Removed unused `getGradeClass` import; removed unused `useCallback` in NestingCalculator
+
+#### Crystal Tab — My Dragons / All Members Switch
+- Same **My Dragons / All Members** toggle added to Crystal Schedule header for Admins/Devs
+- Default is "My Dragons" — no behaviour change for regular members
+
+#### Lineage Tab — Removed for Members
+- **Lineage** removed from the main navigation (no longer visible to Members)
+- Lineage view remains accessible to **Admins and Devs** via the Admin section of the sidebar
+- **Clan Graph** (`clan-canvas`) moved from the Admin section to a new **Breeder** section (green colour) — accessible to Breeders, Admins, and Devs
+- `DashboardPage` guards `clan-canvas` with `canSeeBreederContent()` instead of `isAdmin()`
+
+#### Ctrl+5 / Dev Capture Modal — Removed Unused Stats
+- `DevCaptureModal` stat field list cleaned: removed `stat_agility`, `stat_armor`, `stat_growth_rate`, `stat_venom` (old key) — all removed from game
+- `TrainingPage` stat list updated to match current `STAT_GROUPS` (all 18 live stats)
+
+#### Shared Nesting Spots — Fixed
+- Saving a dragon with **"Save as shared nesting spot"** checked now correctly calls `window.api.nestingSpot.save()`
+- The nesting spots list in `DashboardPage` is refreshed immediately after save
+- Fix was in `doSave()` — the checkbox state was being collected but never acted on
+
+### Code Cleanup
+- `lineagePhysics.js` identified as orphaned (never imported) — kept in tree but noted for future removal
+- `LineageTree.jsx` / `LineageTree.module.css` identified as orphaned components — kept but noted
+- `canSeeBreederContent` added to `DashboardPage` imports (was missing after Clan Graph access change)
+
+
+
+### App Icon
+- The app now uses the official DoD Tracker dragon logo for all platforms
+- Windows (`.exe`/taskbar): multi-size `.ico` (16→256px) — shows correctly in taskbar, Alt+Tab, and Add/Remove Programs
+- Linux: 256×256 PNG
+- macOS: 512×512 PNG
+- The icon is resolved from `resources/assets/` in the packaged build and from `assets/` in dev, so it always displays correctly
+- `bundled-calibration.json` is now explicitly listed in `extraResources` so it always ships with the build
+
+### Roles — Breeder
+- New `breeder` role added between Member and Admin
+- Breeders can see **Breeder Pairings** and **Shared Nesting Spots** in the Nesting tab (same as Admin/Dev)
+- Breeders cannot manage other users, access admin tools, or calibrate
+- Sidebar shows a 🐣 badge for Breeder users
+- `roleName()` returns "Breeder" for the sidebar subtitle
+
+### Settings — Clan Members
+- **Breeder** option added to the role dropdown (🐣 Breeder, purple)
+- Admins can assign member / breeder / admin — but **not** dev (only Devs can promote to Dev)
+- **Layout overlap fix**: the user row now uses CSS Grid (`34px 1fr auto`) instead of plain flexbox, with `min-width: 0` on the name column — long names no longer push the dropdown off-screen or overlap content
+
+---
+
 ## Beta1.1 (2026-05-10)
 
 ### Capture System — Percentage-Based Calibration

@@ -1,0 +1,231 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 24px;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ── Day/Night toggle ── */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 6px 14px 6px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.toggle:hover { border-color: var(--accent-dim); }
+.toggleDay  { border-color: rgba(255,193,7,0.4);  }
+.toggleNight{ border-color: rgba(82,145,245,0.4); }
+
+.toggleIcon { font-size: 16px; }
+
+.toggleTrack {
+  width: 34px; height: 18px;
+  background: var(--surface2);
+  border-radius: 99px;
+  position: relative;
+  border: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.toggleNight .toggleTrack { background: rgba(82,145,245,0.2); }
+.toggleDay   .toggleTrack { background: rgba(255,193,7,0.2);  }
+
+.toggleThumb {
+  position: absolute;
+  left: 2px; top: 2px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: left 0.2s, background 0.2s;
+}
+.toggleNight .toggleThumb { background: #5291f5; }
+.toggleDay   .toggleThumb { background: #ffca28; }
+.thumbRight { left: 18px !important; }
+
+.toggleLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 36px;
+}
+
+/* ── Table ── */
+.tableWrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.accountTh {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-width: 140px;
+}
+
+.crystalTh {
+  text-align: center;
+  padding: 10px 8px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-width: 90px;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+
+.crystalDot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  margin-bottom: 1px;
+}
+
+.crystalRange {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.row {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.row:hover { background: var(--surface); }
+.rowEmpty { opacity: 0.5; }
+
+.accountCell {
+  padding: 8px 14px;
+  border-right: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.groupLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+
+.accountLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.crystalCell {
+  text-align: center;
+  padding: 6px 8px;
+  border-left: 1px solid var(--border);
+  vertical-align: middle;
+  transition: background 0.15s;
+}
+
+.cellContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tick {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dragonPips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+}
+
+.dragonPip {
+  font-size: 9px;
+  padding: 1px 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  color: var(--muted);
+  cursor: default;
+}
+.dragonPip:hover { color: var(--text); }
+
+.emptyRow {
+  text-align: center;
+  padding: 32px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+.legendItem { }
+.legendNote {
+  color: rgba(82,145,245,0.7);
+}

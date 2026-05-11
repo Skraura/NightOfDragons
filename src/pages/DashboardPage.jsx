@@ -1,14 +1,15 @@
-import { isAdmin, isDev } from '../lib/roleUtils'
-import { useState, useEffect, useCallback } from 'react'
+import { isAdmin, isDev, canSeeBreederContent } from '../lib/roleUtils'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApp } from '../App'
 import TitleBar from '../components/TitleBar'
 import DragonList from '../components/DragonList'
 import DragonDetail from '../components/DragonDetail'
 import DragonForm from '../components/DragonForm'
+import EggForm from '../components/EggForm'
+import CrystalTable from '../components/CrystalTable'
 import CaptureConfirmModal from '../components/CaptureConfirmModal'
 import Sidebar from '../components/Sidebar'
 import LineageGraph from '../components/LineageGraph'
-// ClanLineageCanvas replaced by LineageGraph in v8.1.0
 import SettingsPage from './SettingsPage'
 import NestingCalculator from './NestingCalculator'
 import ElderTracker from './ElderTracker'
@@ -28,6 +29,9 @@ export default function DashboardPage({ onLogout }) {
   const [selected,    setSelected]    = useState(null)
   const [view,        setView]        = useState('dragons')
   const [showForm,    setShowForm]    = useState(false)
+  const [showEggForm, setShowEggForm] = useState(false)
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const addBtnRef = useRef(null)
   const [editDragon,  setEditDragon]  = useState(null)
   const [locationTarget, setLocationTarget] = useState(null) // dragon for location change from context menu
   const [filters, setFilters] = useState({
@@ -183,6 +187,23 @@ export default function DashboardPage({ onLogout }) {
 
   async function doSave(data) {
     try {
+      // Save as shared nesting spot if admin flagged it
+      if (isAdmin(user) && data.location?.isNest && data.location?.spotName) {
+        try {
+          await window.api.nestingSpot?.save({
+            name: data.location.spotName,
+            x: data.location.x,
+            y: data.location.y,
+          })
+          // Refresh nesting spots list
+          window.api.nestingSpot?.getAll?.()
+            .then(spots => setNestingSpots(spots || []))
+            .catch(() => {})
+        } catch (nestErr) {
+          console.warn('[nestingSpot] save failed:', nestErr.message)
+        }
+      }
+
       if (editDragon) {
         await window.api.dragon.update({ userId: user.id, id: editDragon.id, data })
         if (data.mate_id !== editDragon.mate_id) {
@@ -212,6 +233,80 @@ export default function DashboardPage({ onLogout }) {
       addToast(location ? 'Location set' : 'Location cleared', 'success')
     } catch (err) {
       addToast(err.message, 'error')
+    }
+  }
+
+  // ── Tick: add 1 elder tick to a dragon ──
+  async function handleTick(dragon) {
+    const ELDER_TICKS = { ASD:49, BIO:49, BS:75, SS:80, FS:110, IR:110, BW:181 }
+    const maxTicks = ELDER_TICKS[dragon.species]
+    if (!maxTicks) return addToast('Unknown species tick data', 'error')
+    const TICKS_PER_DAY = { ASD:4, BIO:4, BS:2, SS:2, FS:3, IR:3, BW:4 }
+    const tickIncrement = 1 / maxTicks
+    const currentTicks = parseFloat(dragon.ticks) || 0
+    const newTicks = Math.min(currentTicks + tickIncrement, 1)
+    const targetUserId = dragon.user_id || user.id
+    try {
+      await window.api.dragon.update({ userId: targetUserId, id: dragon.id, data: { ticks: newTicks } })
+      if (registryMode === 'clan' && isAdmin(user)) {
+        const res = await window.api.dragon.getAllClan?.()
+        if (res?.ok) setClanDragons(res.dragons || [])
+      } else {
+        await loadDragons()
+      }
+      const pctNow = Math.round(newTicks * 100)
+      addToast(`Tick added — ${dragon.species} now at ${pctNow}%`, 'success')
+    } catch (err) {
+      addToast(err.message || 'Failed to add tick', 'error')
+    }
+  }
+
+  // ── Give Egg: mark egg as dead for giver, create for receiver ──
+  async function handleGiveEgg(egg, { userId: recipientId, accountId, accountLabel }) {
+    try {
+      // Mark this egg as dead (transferred)
+      await window.api.dragon.update({ userId: egg.user_id || user.id, id: egg.id, data: { is_dead: true, notes: `${egg.notes ? egg.notes + ' | ' : ''}Transferred to ${accountLabel}` } })
+      // Create a new egg entry for the recipient
+      await window.api.dragon.create({
+        userId: recipientId,
+        data: {
+          species:        egg.species,
+          gender:         egg.gender,
+          skin_dominant:  egg.skin_dominant,
+          skin_recessive: egg.skin_recessive,
+          notes:          `Received egg${egg.notes ? ': ' + egg.notes : ''}`,
+          is_egg:         true,
+          growth:         'Egg',
+          ticks:          0,
+          is_elder:       0,
+          account_id:     accountId,
+          player_name:    accountLabel,
+          user_id:        recipientId,
+        }
+      })
+      await loadDragons()
+      window.dispatchEvent(new CustomEvent('dragon:refresh'))
+      addToast(`🥚 Egg given to ${accountLabel}`, 'success')
+    } catch (err) {
+      addToast(err.message || 'Failed to give egg', 'error')
+    }
+  }
+
+  async function handleSaveEgg(data) {
+    try {
+      if (editDragon?.is_egg) {
+        await window.api.dragon.update({ userId: editDragon.user_id || user.id, id: editDragon.id, data })
+        addToast('🥚 Egg updated', 'success')
+      } else {
+        await window.api.dragon.create({ userId: data.user_id || user.id, data })
+        addToast('🥚 Egg added', 'success')
+      }
+      setShowEggForm(false)
+      setEditDragon(null)
+      await loadDragons()
+      window.dispatchEvent(new CustomEvent('dragon:refresh'))
+    } catch (err) {
+      addToast(err.message || 'Save failed', 'error')
     }
   }
 
@@ -269,8 +364,13 @@ export default function DashboardPage({ onLogout }) {
           </div>
         )}
 
-        {view === 'nesting'     && <NestingCalculator dragons={dragons} />}
-        {view === 'elder'       && <ElderTracker dragons={dragons} />}
+        {view === 'nesting'     && <NestingCalculator dragons={dragons.filter(d => !d.is_egg)} />}
+        {view === 'elder'       && <ElderTracker user={user} dragons={[...dragons, ...clanDragons].filter((d,i,a)=>a.findIndex(x=>x.id===d.id)===i)} myDragons={dragons} onTick={handleTick} />}
+        {view === 'crystals'    && (
+          <div className={styles.main}>
+            <CrystalTable dragons={dragons} clanDragons={clanDragons} allUsers={allUsers} />
+          </div>
+        )}
         {/* Training page lives inside DevConsolePage → dev-training nav */}
         {view === 'map'         && (
           <div className={styles.main}>
@@ -281,7 +381,7 @@ export default function DashboardPage({ onLogout }) {
             />
           </div>
         )}
-        {view === 'clan-canvas' && isAdmin(user) && (
+        {view === 'clan-canvas' && canSeeBreederContent(user) && (
           <div className={styles.main} style={{ padding:0 }}>
             <LineageGraph dragons={clanDragons} clanDragons={[]} user={user} />
           </div>
@@ -384,13 +484,35 @@ export default function DashboardPage({ onLogout }) {
                 <div className={styles.actionBtns}>
                   <button className="btn btn-ghost btn-sm" onClick={handleImport} title="Import JSON">↑ Import</button>
                   <button className="btn btn-ghost btn-sm" onClick={handleExport} title="Export JSON">↓ Export</button>
-                  <button className="btn btn-primary" onClick={() => { setEditDragon(null); setShowForm(true) }}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      <line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    Add Dragon
-                  </button>
+                  {/* Split button: left = Add Dragon, right arrow = expand menu with Add Egg */}
+                  <div className={styles.splitBtn} ref={addBtnRef}>
+                    <button
+                      className={`btn btn-primary ${styles.splitBtnMain}`}
+                      onClick={() => { setEditDragon(null); setShowForm(true); setAddMenuOpen(false) }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        <line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      Add Dragon
+                    </button>
+                    <button
+                      className={`btn btn-primary ${styles.splitBtnArrow}`}
+                      onClick={() => setAddMenuOpen(o => !o)}
+                      title="More options"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    {addMenuOpen && (
+                      <div className={styles.splitDropdown}>
+                        <button className={styles.splitDropItem} onClick={() => { setAddMenuOpen(false); setShowEggForm(true) }}>
+                          🥚 Add Egg
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -401,11 +523,14 @@ export default function DashboardPage({ onLogout }) {
                 loading={loading}
                 selected={selected}
                 onSelect={setSelected}
-                onEdit={d  => { setEditDragon(d); setShowForm(true) }}
+                onEdit={d  => { setEditDragon(d); d.is_egg ? setShowEggForm(true) : setShowForm(true) }}
                 onDelete={handleDelete}
                 onKill={handleKill}
                 onChangeLocation={d => setLocationTarget(d)}
                 onToggleHungry={handleToggleHungry}
+                onTick={handleTick}
+                onGiveEgg={handleGiveEgg}
+                allUsers={allUsers}
               />
               {selectedDragon && (
                 <div className={styles.detailOverlay} onClick={() => setSelected(null)}>
@@ -414,7 +539,7 @@ export default function DashboardPage({ onLogout }) {
                     <DragonDetail
                       dragon={selectedDragon}
                       allDragons={dragons}
-                      onEdit={d => { setEditDragon(d); setShowForm(true) }}
+                      onEdit={d => { setEditDragon(d); d.is_egg ? setShowEggForm(true) : setShowForm(true) }}
                       onDelete={handleDelete}
                     />
                   </div>
@@ -434,6 +559,16 @@ export default function DashboardPage({ onLogout }) {
           nestingSpots={nestingSpots}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditDragon(null) }}
+        />
+      )}
+
+      {/* ── Egg form ── */}
+      {showEggForm && (
+        <EggForm
+          egg={editDragon}
+          allUsers={allUsers}
+          onSave={handleSaveEgg}
+          onClose={() => { setShowEggForm(false); setEditDragon(null) }}
         />
       )}
 

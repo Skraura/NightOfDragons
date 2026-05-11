@@ -1,6 +1,6 @@
 {
   "name": "dod-tracker",
-  "version": "Beta1.1",
+  "version": "Beta1.3",
   "description": "DoD Tracker v8.3.0 \u2014 New Nest-based Lineage Graph",
   "main": "electron/main.js",
   "scripts": {
@@ -68,6 +68,10 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "bundled-calibration.json",
+        "to": "bundled-calibration.json"
       }
     ],
     "asar": true,
@@ -108,7 +112,11 @@
       "category": "Game",
       "description": "Day of Dragons dragon tracker"
     },
-    "publish": null
+    "publish": null,
+    "mac": {
+      "icon": "assets/icon512.png",
+      "category": "public.app-category.utilities"
+    }
   },
   "author": "DoD Tracker"
 }

@@ -1,21 +1,27 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { ELDER_DATA, calcElderProgress } from '../lib/nestingEngine'
-import { getGradeClass } from '../lib/dragonData'
+import { isAdmin } from '../lib/roleUtils'
 import styles from './ElderTracker.module.css'
 
-export default function ElderTracker({ dragons = [] }) {
+export default function ElderTracker({ user, dragons = [], myDragons = [], onTick }) {
+  const userIsAdmin = isAdmin(user)
+  const [viewMode, setViewMode] = useState('mine')   // 'mine' | 'all'
   const [filter, setFilter] = useState('all')   // all | in-progress | elder | no-data
 
+  // Pool: my dragons only or all clan dragons
+  const pool = (userIsAdmin && viewMode === 'all') ? dragons : myDragons
+
   // Only dragons with species data that we have elder info for
+  // ⚠ depends on `pool` (which changes with viewMode) — NOT on `dragons` directly
   const tracked = useMemo(() => {
-    return dragons
+    return pool
       .filter(d => d.species && ELDER_DATA[d.species])
       .map(d => ({
         dragon: d,
         progress: calcElderProgress(d.species, d.ticks ?? 0),
       }))
       .sort((a, b) => (b.progress?.pct ?? 0) - (a.progress?.pct ?? 0))
-  }, [dragons])
+  }, [pool])   // ← was [dragons], which never reflected viewMode changes
 
   const filtered = useMemo(() => {
     switch (filter) {
@@ -38,18 +44,36 @@ export default function ElderTracker({ dragons = [] }) {
           <h2 className={`cinzel ${styles.title}`}>Elder Tracker</h2>
           <p className={styles.sub}>Track tick progression and time to elder for each dragon</p>
         </div>
-        <div className={styles.headerStats}>
-          <div className={styles.hStat}>
-            <span className={`cinzel ${styles.hStatNum}`} style={{ color: 'var(--elder)' }}>{elderCount}</span>
-            <span className={styles.hStatLabel}>Elders</span>
-          </div>
-          <div className={styles.hStat}>
-            <span className={`cinzel ${styles.hStatNum}`} style={{ color: 'var(--accent)' }}>{inProgressCount}</span>
-            <span className={styles.hStatLabel}>In Progress</span>
-          </div>
-          <div className={styles.hStat}>
-            <span className={`cinzel ${styles.hStatNum}`} style={{ color: 'var(--text-muted)' }}>{noDataCount}</span>
-            <span className={styles.hStatLabel}>No Ticks</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+          {userIsAdmin && (
+            <div style={{ display: 'flex', background: 'var(--bg-deep)', borderRadius: 8, border: '1px solid var(--bg-border)', overflow: 'hidden' }}>
+              {[['mine', 'My Dragons'], ['all', 'All Members']].map(([mode, label]) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  style={{
+                    padding: '5px 14px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
+                    background: viewMode === mode ? 'var(--accent)' : 'transparent',
+                    color: viewMode === mode ? '#fff' : 'var(--text-muted)',
+                    transition: 'background 0.15s, color 0.15s',
+                  }}
+                >{label}</button>
+              ))}
+            </div>
+          )}
+          <div className={styles.headerStats}>
+            <div className={styles.hStat}>
+              <span className={`cinzel ${styles.hStatNum}`} style={{ color: 'var(--elder)' }}>{elderCount}</span>
+              <span className={styles.hStatLabel}>Elders</span>
+            </div>
+            <div className={styles.hStat}>
+              <span className={`cinzel ${styles.hStatNum}`} style={{ color: 'var(--accent)' }}>{inProgressCount}</span>
+              <span className={styles.hStatLabel}>In Progress</span>
+            </div>
+            <div className={styles.hStat}>
+              <span className={`cinzel ${styles.hStatNum}`} style={{ color: 'var(--text-muted)' }}>{noDataCount}</span>
+              <span className={styles.hStatLabel}>No Ticks</span>
+            </div>
           </div>
         </div>
       </div>
@@ -95,7 +119,7 @@ export default function ElderTracker({ dragons = [] }) {
       ) : (
         <div className={styles.dragonList}>
           {filtered.map(({ dragon: d, progress: p }) => (
-            <ElderCard key={d.id} dragon={d} progress={p} />
+            <ElderCard key={d.id} dragon={d} progress={p} onTick={onTick} />
           ))}
         </div>
       )}
@@ -103,14 +127,34 @@ export default function ElderTracker({ dragons = [] }) {
   )
 }
 
-function ElderCard({ dragon: d, progress: p }) {
+function ElderCard({ dragon: d, progress: p, onTick }) {
   if (!p) return null
+  const [ctx, setCtx] = useState(null)
 
-  const pctDisplay  = (p.pct * 100).toFixed(1)
-  const isElder     = p.isElder
+  const pctDisplay = (p.pct * 100).toFixed(1)
+  const isElder    = p.isElder
+
+  function handleContextMenu(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    setCtx({ x: e.clientX, y: e.clientY })
+  }
 
   return (
-    <div className={`${styles.card} ${isElder ? styles.cardElder : ''} fade-in`}>
+    // position:relative so the ctx menu portal can escape; cursor hints right-click
+    <div
+      className={`${styles.card} ${isElder ? styles.cardElder : ''} fade-in`}
+      onContextMenu={handleContextMenu}
+      style={{ position: 'relative', cursor: 'context-menu', userSelect: 'none' }}
+    >
+      {ctx && (
+        <ElderCtxMenu
+          x={ctx.x} y={ctx.y}
+          dragon={d} isElder={isElder}
+          onTick={() => { onTick?.(d); setCtx(null) }}
+          onClose={() => setCtx(null)}
+        />
+      )}
       {/* Left: identity */}
       <div className={styles.cardLeft}>
         <div className={styles.cardSpecies}>
@@ -218,6 +262,69 @@ function ElderCard({ dragon: d, progress: p }) {
           <span className={styles.tickRateLabel}>ticks/day</span>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Elder tab right-click menu ───────────────────────────────────────────────
+function ElderCtxMenu({ x, y, dragon, isElder, onTick, onClose }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    // Close on any click or right-click outside
+    function handle(e) {
+      if (ref.current && !ref.current.contains(e.target)) onClose()
+    }
+    // Use capture phase so we catch events before children suppress them
+    document.addEventListener('mousedown', handle, true)
+    document.addEventListener('contextmenu', handle, true)
+    return () => {
+      document.removeEventListener('mousedown', handle, true)
+      document.removeEventListener('contextmenu', handle, true)
+    }
+  }, [onClose])
+
+  const menuStyle = {
+    position: 'fixed',
+    left: Math.min(x, window.innerWidth  - 190),
+    top:  Math.min(y, window.innerHeight - 130),
+    zIndex: 99999,
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--bg-border)',
+    borderRadius: 10,
+    padding: '6px 0',
+    minWidth: 170,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    pointerEvents: 'all',
+  }
+
+  const itemBase = {
+    display: 'flex', alignItems: 'center', gap: 8,
+    padding: '9px 16px', fontSize: 13, color: 'var(--text-primary)',
+    background: 'transparent', border: 'none', width: '100%',
+    textAlign: 'left', cursor: 'pointer', transition: 'background 0.1s',
+  }
+
+  return (
+    <div ref={ref} style={menuStyle} onClick={e => e.stopPropagation()}>
+      {!isElder && (
+        <button
+          style={itemBase}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          onClick={e => { e.stopPropagation(); onTick() }}
+        >
+          ✓ Add 1 Tick
+        </button>
+      )}
+      <button
+        style={{ ...itemBase, color: 'var(--text-muted)', fontSize: 12 }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        onClick={e => { e.stopPropagation(); onClose() }}
+      >
+        Cancel
+      </button>
     </div>
   )
 }

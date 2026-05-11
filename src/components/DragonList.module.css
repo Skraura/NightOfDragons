@@ -247,3 +247,52 @@
 .ctxItemDestructive:hover { background: rgba(224,90,90,0.1); }
 
 .ctxDivider { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ── Beta1.3: Egg card ── */
+.cardEgg {
+  border: 1px dashed rgba(255,193,7,0.45) !important;
+  background: rgba(255,193,7,0.04) !important;
+}
+.cardEgg:hover {
+  border-color: rgba(255,193,7,0.7) !important;
+}
+.eggIcon {
+  font-size: 16px;
+  margin-right: 4px;
+}
+.eggBadge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(255,193,7,0.18);
+  color: #ffca28;
+  border: 1px solid rgba(255,193,7,0.35);
+  margin-left: 4px;
+}
+.eggNotes {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  font-style: italic;
+  padding: 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Beta1.3: Context menu sub-menu ── */
+.ctxSub {
+  padding: 0 0 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.ctxSubLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 6px 14px 3px;
+}

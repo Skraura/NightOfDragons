@@ -21,10 +21,16 @@ let mainWindow = null, calibrationWindow = null
 let registeredHotkey = null   // currently registered shortcut string
 
 function createMainWindow() {
+  // Use platform-appropriate icon; resolve from resources in packed build, from project root in dev
+  const iconFile = process.platform === 'win32' ? 'icon.ico' : 'icon.png'
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', iconFile)
+    : path.join(__dirname, '../assets', iconFile)
+
   mainWindow = new BrowserWindow({
     width: 1280, height: 820, minWidth: 960, minHeight: 600,
     frame: false, backgroundColor: '#0d0f14',
-    icon: path.join(__dirname, '../public/logo.png'),
+    icon: iconPath,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   })
   isDev ? mainWindow.loadURL('http://localhost:5173') : mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))

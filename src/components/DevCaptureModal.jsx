@@ -15,9 +15,8 @@ import styles from './DevCaptureModal.module.css'
 // All field names that can have training samples saved.
 // Icon fields (gender/species/growth) and stat fields.
 const STAT_FIELDS = [
-  'stat_life_expectancy','stat_scale_thickness','stat_stamina','stat_agility',
-  'stat_strength','stat_growth_rate','stat_armor','stat_venom',
-  'stat_bite_force','stat_power','stat_nutrient_absorption','stat_water_retention',
+  'stat_life_expectancy','stat_scale_thickness','stat_stamina',
+  'stat_strength','stat_bite_force','stat_power','stat_nutrient_absorption','stat_water_retention',
   'stat_toxin_tolerance','stat_impact_resistance','stat_pierce_resistance',
   'stat_fire_resistance','stat_frost_resistance','stat_plasma_resistance',
   'stat_lightning_resistance','stat_acid_resistance','stat_venom_resistance',

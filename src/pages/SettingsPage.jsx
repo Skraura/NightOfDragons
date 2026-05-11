@@ -556,7 +556,7 @@ function LineagePrefRow({ label, desc, checked, onChange, locked = false }) {
 function ClanUsersCard({ user, addToast }) {
   const [users,    setUsers]    = useState([])
   const [loading,  setLoading]  = useState(true)
-  const [updating, setUpdating] = useState(null) // userId being updated
+  const [updating, setUpdating] = useState(null)
 
   useEffect(() => {
     window.api?.auth.listUsers?.()
@@ -582,61 +582,88 @@ function ClanUsersCard({ user, addToast }) {
     }
   }
 
-  const ROLE_OPTIONS = [
-    { value: 'member', label: '🐉 Member',       color: 'var(--text)' },
-    { value: 'admin',  label: '★ Admin',          color: '#c9932a' },
-    { value: 'dev',    label: '⚙ Developer',      color: '#5291f5' },
+  function roleColor(role) {
+    return role === 'dev'     ? '#5291f5'
+         : role === 'admin'   ? '#c9932a'
+         : role === 'breeder' ? '#a870d8'
+         : 'var(--muted)'
+  }
+
+  // Admins can assign member/breeder/admin; only devs can assign dev
+  const baseOptions = [
+    { value: 'member',  label: '🐉 Member'   },
+    { value: 'breeder', label: '🐣 Breeder'  },
+    { value: 'admin',   label: '★ Admin'     },
+    { value: 'dev',     label: '⚙ Developer' },
   ]
 
   return (
-    <section style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:'20px 22px' }}>
-      <h3 style={{ margin:'0 0 4px', fontSize:14, fontWeight:700 }}>👥 Clan Members</h3>
-      <p style={{ margin:'0 0 16px', fontSize:12, color:'var(--muted)' }}>
-        Manage roles for all registered clan members. Devs have all admin privileges plus dev tools.
+    <section style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 14, padding: '20px 22px',
+    }}>
+      <h3 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700 }}>👥 Clan Members</h3>
+      <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--muted)' }}>
+        Manage roles for all registered clan members. Breeders can see Breeder Pairings and Shared Nesting Spots.
       </p>
 
-      {loading && <p style={{ color:'var(--muted)', fontSize:13 }}>Loading members…</p>}
+      {loading && <p style={{ color: 'var(--muted)', fontSize: 13 }}>Loading members…</p>}
 
       {!loading && users.map(u => {
-        const isMe = u.id === user.id
-        const currentRole = u.role || 'member'
+        const isMe          = u.id === user.id
+        const currentRole   = u.role || 'member'
+        const availableOpts = isDev(user) ? baseOptions : baseOptions.filter(r => r.value !== 'dev')
+
         return (
           <div key={u.id} style={{
-            display:'flex', alignItems:'center', gap:12,
-            padding:'10px 0', borderBottom:'1px solid var(--border)',
+            display: 'grid',
+            gridTemplateColumns: '34px 1fr auto',
+            alignItems: 'center',
+            gap: 12,
+            padding: '10px 0',
+            borderBottom: '1px solid var(--border)',
           }}>
+            {/* Avatar */}
             <div style={{
-              width:34, height:34, borderRadius:'50%',
-              background:'var(--surface2)', display:'flex', alignItems:'center',
-              justifyContent:'center', fontWeight:700, fontSize:14, flexShrink:0,
-              color: currentRole === 'dev' ? '#5291f5' : currentRole === 'admin' ? '#c9932a' : 'var(--muted)',
+              width: 34, height: 34, borderRadius: '50%',
+              background: 'var(--surface2)', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontWeight: 700, fontSize: 14,
+              color: roleColor(currentRole), flexShrink: 0,
             }}>
               {(u.displayName || u.username || u.email || '?')[0].toUpperCase()}
             </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontWeight:600, fontSize:13 }}>
+
+            {/* Name + email — min-width:0 prevents overflow from pushing select off screen */}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {u.displayName || u.username || u.email}
-                {isMe && <span style={{ fontSize:10, color:'var(--muted)', marginLeft:6 }}>(you)</span>}
+                {isMe && <span style={{ fontSize: 10, color: 'var(--muted)', marginLeft: 6 }}>(you)</span>}
               </div>
-              <div style={{ fontSize:11, color:'var(--muted)' }}>{u.email}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {u.email}
+              </div>
             </div>
-            <select
-              value={currentRole}
-              disabled={isMe || updating === u.id}
-              onChange={e => handleRoleChange(u.id, e.target.value)}
-              style={{
-                fontSize:12, padding:'4px 8px', borderRadius:6,
-                border:'1px solid var(--border)', background:'var(--surface2)',
-                color: currentRole === 'dev' ? '#5291f5' : currentRole === 'admin' ? '#c9932a' : 'var(--text)',
-                opacity: isMe ? 0.5 : 1,
-                cursor: isMe ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {ROLE_OPTIONS.map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-            {updating === u.id && <span style={{ fontSize:11, color:'var(--muted)' }}>…</span>}
+
+            {/* Role select — flex-shrink:0 keeps it at its natural width */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <select
+                value={currentRole}
+                disabled={isMe || updating === u.id}
+                onChange={e => handleRoleChange(u.id, e.target.value)}
+                style={{
+                  fontSize: 12, padding: '4px 8px', borderRadius: 6,
+                  border: '1px solid var(--border)', background: 'var(--surface2)',
+                  color: roleColor(currentRole),
+                  opacity: isMe ? 0.5 : 1,
+                  cursor: isMe ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {availableOpts.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+              {updating === u.id && <span style={{ fontSize: 11, color: 'var(--muted)' }}>…</span>}
+            </div>
           </div>
         )
       })}

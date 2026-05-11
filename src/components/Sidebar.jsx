@@ -1,19 +1,25 @@
 import styles from './Sidebar.module.css'
-import { isAdmin, isDev, roleName } from '../lib/roleUtils'
+import { isAdmin, isDev, roleName, canSeeBreederContent } from '../lib/roleUtils'
 
 const NAV = [
   { id: 'account-dashboard', label: 'Dashboard',   Icon: DashboardIcon },
   { id: 'dragons',           label: 'Registry',    Icon: DragonIcon  },
   { id: 'elder',             label: 'Elder',       Icon: ElderIcon   },
+  { id: 'crystals',          label: 'Crystals',    Icon: CrystalIcon },
   { id: 'nesting',           label: 'Nesting',     Icon: NestingIcon },
-  { id: 'lineage',           label: 'Lineage',     Icon: LineageIcon,  adminOnly: true },
   { id: 'map',               label: 'Map',         Icon: MapIcon     },
   { id: 'feedback',          label: 'Feedback',    Icon: FeedbackIcon, adminOnly: true },
   { id: 'settings',          label: 'Settings',    Icon: SettingsIcon },
 ]
 
-const NAV_ADMIN = [
+// Breeder section — visible to Breeders, Admins, Devs (green colour)
+const NAV_BREEDER = [
   { id: 'clan-canvas', label: 'Clan Graph',  Icon: ClanCanvasIcon },
+]
+
+// Admin section — visible to Admins and Devs only
+const NAV_ADMIN = [
+  { id: 'lineage',     label: 'Lineage',     Icon: LineageIcon },
   { id: 'clan-map',    label: 'Clan Map',    Icon: MapIcon },
 ]
 
@@ -24,8 +30,9 @@ const NAV_DEV = [
 ]
 
 export default function Sidebar({ user, view, onView, onLogout, stats }) {
-  const userIsAdmin = isAdmin(user)
-  const userIsDev   = isDev(user)
+  const userIsAdmin   = isAdmin(user)
+  const userIsDev     = isDev(user)
+  const userIsBreeder = !userIsAdmin && !userIsDev && canSeeBreederContent(user)
 
   return (
     <aside className={styles.sidebar}>
@@ -34,8 +41,9 @@ export default function Sidebar({ user, view, onView, onLogout, stats }) {
         <div className={styles.userInfo}>
           <span className={styles.username}>
             {user.username}
-            {userIsDev   && <span className={styles.devBadge}  title="Developer">⚙</span>}
-            {!userIsDev && userIsAdmin && <span className={styles.adminBadge} title="Admin">★</span>}
+            {userIsDev     && <span className={styles.devBadge}     title="Developer">⚙</span>}
+            {!userIsDev && userIsAdmin  && <span className={styles.adminBadge}   title="Admin">★</span>}
+            {userIsBreeder && <span className={styles.breederBadge} title="Breeder">🐣</span>}
           </span>
           <span className={styles.userSub}>
             {roleName(user)}
@@ -63,6 +71,24 @@ export default function Sidebar({ user, view, onView, onLogout, stats }) {
           )
         })}
 
+        {/* Breeder section — Breeders, Admins, Devs */}
+        {canSeeBreederContent(user) && (
+          <>
+            <div className={`${styles.navSectionLabel} ${styles.navSectionBreeder}`}>Breeder</div>
+            {NAV_BREEDER.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                className={`${styles.navBtn} ${styles.navBreederBtn} ${view === id ? styles.navActive : ''}`}
+                onClick={() => onView(id)}
+              >
+                <Icon />
+                <span>{label}</span>
+              </button>
+            ))}
+          </>
+        )}
+
+        {/* Admin section — Admins and Devs only */}
         {userIsAdmin && (
           <>
             <div className={styles.navSectionLabel}>Admin</div>
@@ -134,6 +160,9 @@ function Stat({ value, label, color }) {
   )
 }
 
+function CrystalIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 19 7 19 17 12 22 5 17 5 7"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="17" x2="19" y2="17"/></svg>
+}
 function DragonIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8 2 4 5 4 9c0 2 1 4 3 5.5L5 18l4-1.5c1 .3 2 .5 3 .5s2-.2 3-.5L19 18l-2-3.5C19 13 20 11 20 9c0-4-4-7-8-7z"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>
 }
